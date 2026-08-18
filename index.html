@@ -263,7 +263,7 @@ function openRegister(){loginPanel.classList.add("hidden");registerPanel.classLi
 function createAccount(){const n=registerName.value.trim(),p=registerPhone.value.trim(),a=registerPassword.value,b=registerPassword2.value;registerMessage.className="danger";if(!n||!p||!a||!b)return registerMessage.textContent="Completa todos los campos.";if(a.length<6)return registerMessage.textContent="La contraseña debe tener mínimo 6 caracteres.";if(a!==b)return registerMessage.textContent="Las contraseñas no coinciden.";if(users.some(x=>x.phone===p))return registerMessage.textContent="Ese teléfono ya está registrado.";users.push({id:String(Date.now()),name:n,phone:p,password:a,role:"customer"});persist();registerMessage.className="ok";registerMessage.textContent="Cuenta creada correctamente.";loginPhone.value=p;setTimeout(openLogin,600);}
 function doLogin(){const p=loginPhone.value.trim(),a=loginPassword.value;currentUser=users.find(x=>x.phone===p&&x.password===a)||null;if(!currentUser){loginMessage.textContent="Teléfono o contraseña incorrectos.";return;}authView.classList.add("hidden");appView.classList.remove("hidden");helloName.textContent=currentUser.name;if(currentUser.role==="admin"){document.querySelectorAll(".nav-client").forEach(x=>x.classList.add("hidden"));document.querySelectorAll(".nav-admin").forEach(x=>x.classList.remove("hidden"));document.querySelectorAll("main section").forEach(x=>x.classList.add("hidden"));workOrdersView.classList.remove("hidden");document.querySelectorAll("nav button").forEach(x=>x.classList.remove("nav-on"));navWorkOrders.classList.add("nav-on");renderWorkOrders();renderPayments();renderAdmin();renderManualMenu();renderManualCart();}else{document.querySelectorAll(".nav-admin").forEach(x=>x.classList.add("hidden"));renderMenu();renderCart();renderMyOrders();}}
 function forgotPassword(){alert("La recuperación segura se conectará en la versión online mediante código de verificación.");}function logout(){location.reload();}
-function showView(id,btn){document.querySelectorAll("main section").forEach(x=>x.classList.add("hidden"));document.getElementById(id).classList.remove("hidden");document.querySelectorAll("nav button").forEach(x=>x.classList.remove("nav-on"));btn.classList.add("nav-on");if(id==="myOrdersView")renderMyOrders();if(id==="workOrdersView")renderWorkOrders();if(id==="adminView")renderAdmin();if(id==="manualOrderView"){renderManualMenu();renderManualCart();}if(id==="paymentsView")renderPayments();}
+function showView(id,btn){refreshAdminOnlyUI();document.querySelectorAll("main section").forEach(x=>x.classList.add("hidden"));document.getElementById(id).classList.remove("hidden");document.querySelectorAll("nav button").forEach(x=>x.classList.remove("nav-on"));btn.classList.add("nav-on");if(id==="myOrdersView")renderMyOrders();if(id==="workOrdersView")renderWorkOrders();if(id==="adminView")renderAdmin();if(id==="manualOrderView"){renderManualMenu();renderManualCart();}if(id==="paymentsView")renderPayments();}
 
 function renderMenu(){menuList.innerHTML=products.map((p,i)=>`<div class="product ${p.available?"":"off"}"><b>${p.name}</b><div class="price">${money(p.price)}</div>${p.available?`<button class="primary full" onclick="addToCart(${i})">Agregar</button>`:`<button class="secondary full" disabled>AGOTADO</button>`}</div>`).join("");}
 function addToCart(i){if(!products[i].available)return;cartItems.push({name:products[i].name,price:products[i].price,without:[],extras:[]});renderCart();}
@@ -597,9 +597,16 @@ let businessState={status:'open',message:'',reopenTime:''};
 
 
 function refreshAdminOnlyUI(){
-  const isAdmin = currentUser?.role === "admin";
-  const panel = document.getElementById("adminBusinessStatusPanel");
-  if(panel) panel.classList.toggle("hidden", !isAdmin);
+  const panel=document.getElementById("adminBusinessStatusPanel");
+  if(!panel)return;
+  const isAdmin=!!(currentUser && currentUser.role==="admin");
+  if(isAdmin){
+    panel.classList.remove("hidden");
+    panel.style.display="block";
+  }else{
+    panel.classList.add("hidden");
+    panel.style.display="none";
+  }
 }
 
 async function loadBusinessStatus(){
@@ -661,6 +668,8 @@ setInterval(loadBusinessStatus,60000);
 
 
 setTimeout(refreshAdminOnlyUI,0);
+
+setInterval(refreshAdminOnlyUI,1500);
 </script>
 </body>
 </html>
