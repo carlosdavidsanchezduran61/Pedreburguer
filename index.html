@@ -57,6 +57,66 @@ hr{border:0;border-top:1px solid var(--line);margin:15px 0}
 .category-tab{white-space:nowrap}
 </style>
 
+
+<style>
+.category-grid{
+  display:grid !important;
+  grid-template-columns:repeat(2,minmax(0,1fr)) !important;
+  gap:10px !important;
+  width:100% !important;
+  overflow:visible !important;
+  margin:8px 0 14px !important;
+}
+.category-card{
+  width:100% !important;
+  min-height:70px !important;
+  border:1px solid #dedede !important;
+  border-radius:14px !important;
+  background:#fff !important;
+  padding:10px 8px !important;
+  font-weight:800 !important;
+  display:flex !important;
+  flex-direction:column !important;
+  align-items:center !important;
+  justify-content:center !important;
+  gap:4px !important;
+  text-align:center !important;
+  white-space:normal !important;
+  overflow-wrap:anywhere !important;
+}
+.category-card.active{
+  border:2px solid #cf1018 !important;
+  background:#fff5f5 !important;
+}
+.category-emoji{font-size:24px;line-height:1}
+.category-products{
+  display:grid;
+  grid-template-columns:1fr;
+  gap:10px;
+}
+.category-title{
+  font-size:22px;
+  font-weight:900;
+  margin:12px 0 10px;
+}
+.category-empty{
+  margin-top:12px;
+  padding:26px 16px;
+  text-align:center;
+  border:1px dashed #d6d6d6;
+  border-radius:16px;
+  background:#fff;
+}
+.category-empty b{
+  display:block;
+  font-size:20px;
+  margin:5px 0;
+}
+@media (min-width:700px){
+  .category-grid{grid-template-columns:repeat(3,minmax(0,1fr)) !important;}
+}
+</style>
+
 </head>
 <body>
 
@@ -278,69 +338,63 @@ function doLogin(){const p=loginPhone.value.trim(),a=loginPassword.value;current
 function forgotPassword(){alert("La recuperación segura se conectará en la versión online mediante código de verificación.");}function logout(){location.reload();}
 function showView(id,btn){refreshAdminOnlyUI();document.querySelectorAll("main section").forEach(x=>x.classList.add("hidden"));document.getElementById(id).classList.remove("hidden");document.querySelectorAll("nav button").forEach(x=>x.classList.remove("nav-on"));btn.classList.add("nav-on");if(id==="myOrdersView")renderMyOrders();if(id==="workOrdersView")renderWorkOrders();if(id==="adminView")renderAdmin();if(id==="manualOrderView"){renderManualMenu();renderManualCart();}if(id==="paymentsView")renderPayments();}
 
-function renderMenu(){menuList.innerHTML=products.map((p,i)=>`<div class="product ${p.available?"":"off"}"><b>${p.name}</b><div class="price">${money(p.price)}</div>${p.available?`<button class="primary full" onclick="addToCart(${i})">Agregar</button>`:`<button class="secondary full" disabled>AGOTADO</button>`}</div>`).join("");}
-function addToCart(i){if(!products[i].available)return;cartItems.push({name:products[i].name,price:products[i].price,without:[],extras:[]});renderCart();}
-function toggleItem(arr,i,key,val){const a=arr[i][key],j=a.indexOf(val);if(j>=0)a.splice(j,1);else a.push(val);}
-function renderCart(){if(!cartItems.length){cartList.innerHTML='<p class="muted">Tu carrito está vacío.</p>';cartSummary.innerHTML="";return;}cartList.innerHTML=cartItems.map((x,i)=>itemEditor(x,i,"client")).join("");const p=calculateCart(cartItems,orderType.value,document.getElementById("paymentMethod")?.value||"Pago móvil (Bs)");cartSummary.innerHTML=paymentSummary(p,"client");}
-function itemEditor(x,i,mode){const arr=mode==="client"?"cartItems":"manualCartItems";const rer=mode==="client"?"renderCart()":"renderManualCart()";return `<div class="product"><div class="ticket-head"><b>${x.name}</b><button class="secondary" onclick="${arr}.splice(${i},1);${rer}">Quitar</button></div><label>Sin ingredientes</label><div class="checks">${INGREDIENTS.map(a=>`<label><input type="checkbox" ${x.without.includes(a)?"checked":""} onchange="toggleItem(${arr},${i},'without','${a}');${rer}">${a}</label>`).join("")}</div><label>Extras — ${money(configuration.extra)} c/u</label><div class="checks">${INGREDIENTS.map(a=>`<label><input type="checkbox" ${x.extras.includes(a)?"checked":""} onchange="toggleItem(${arr},${i},'extras','${a}');${rer}">${a}</label>`).join("")}</div></div>`;}
-function calculateCart(items,type,method){const subtotal=items.reduce((s,x)=>s+x.price+x.extras.length*configuration.extra,0),delivery=type==="Delivery"?configuration.delivery:0,base=subtotal+delivery;let percent=0;if(method.startsWith("Zelle"))percent=configuration.fees.Zelle;if(method.startsWith("Nequi"))percent=configuration.fees.Nequi;if(method.startsWith("Bancolombia"))percent=configuration.fees.Bancolombia;const fee=base*percent/100,total=base+fee;return{subtotal,delivery,base,method,percent,fee,total};}
-function accountText(method){if(method==="Pago móvil (Bs)")return paymentAccounts.pmBank||paymentAccounts.pmPhone||paymentAccounts.pmId?`Banco: ${paymentAccounts.pmBank||"-"}<br>Teléfono: ${paymentAccounts.pmPhone||"-"}<br>Cédula/RIF: ${paymentAccounts.pmId||"-"}<br>Titular: ${paymentAccounts.holder||"-"}`:"Aún no se han configurado los datos de Pago Móvil.";if(method.startsWith("Zelle"))return paymentAccounts.zelle?`Zelle: ${paymentAccounts.zelle}<br>Titular: ${paymentAccounts.holder||"-"}`:"Zelle aún no configurado.";if(method.startsWith("Nequi"))return paymentAccounts.nequi?`Nequi: ${paymentAccounts.nequi}<br>Titular: ${paymentAccounts.holder||"-"}`:"Nequi aún no configurado.";if(method.startsWith("Bancolombia"))return paymentAccounts.bancolombia?`Bancolombia: ${paymentAccounts.bancolombia}<br>Titular: ${paymentAccounts.holder||"-"}`:"Bancolombia aún no configurado.";return "Pago en efectivo al entregar/retirar.";}
-function paymentSummary(p,mode){let totalText=p.method==="Pago móvil (Bs)"?`${bs(p.total/configuration.bsRate)} <span class="muted">(1 Bs = ${configuration.bsRate.toFixed(2)} COP)</span>`:p.method.includes("USD")?`${usd(p.total/configuration.usdRate)}`:money(p.total);const selId=mode==="client"?"paymentMethod":"manualPaymentMethod",rer=mode==="client"?"renderCart()":"renderManualCart()";return `<div class="total">Subtotal: ${money(p.subtotal)}</div><div>Delivery: ${money(p.delivery)}</div>${p.fee?`<div>Recargo ${p.percent}%: ${money(p.fee)}</div>`:""}<div class="total">Total: ${money(p.total)}</div><label>Método de pago<select id="${selId}" onchange="${rer}"><option ${p.method==="Pago móvil (Bs)"?"selected":""}>Pago móvil (Bs)</option><option ${p.method==="Zelle (USD)"?"selected":""}>Zelle (USD)</option><option ${p.method==="Nequi (COP)"?"selected":""}>Nequi (COP)</option><option ${p.method==="Bancolombia (COP)"?"selected":""}>Bancolombia (COP)</option><option ${p.method==="Efectivo (USD)"?"selected":""}>Efectivo (USD)</option><option ${p.method==="Efectivo (COP)"?"selected":""}>Efectivo (COP)</option></select></label><div class="rate"><b>A pagar:</b> ${totalText}</div><div class="payment-data"><b>Datos para pagar</b><br>${accountText(p.method)}</div>`;}
-function captureGPS(){if(!navigator.geolocation){gpsMessage.textContent="Este navegador no permite ubicación.";return;}gpsMessage.textContent="Obteniendo ubicación…";navigator.geolocation.getCurrentPosition(p=>{currentCoords={lat:p.coords.latitude,lng:p.coords.longitude};gpsMessage.textContent=`Ubicación guardada: ${currentCoords.lat.toFixed(5)}, ${currentCoords.lng.toFixed(5)}`;gpsLink.href=`https://www.google.com/maps/dir/?api=1&destination=${currentCoords.lat},${currentCoords.lng}`;gpsLink.classList.remove("hidden");},()=>gpsMessage.textContent="No se pudo obtener la ubicación. Revisa permisos.");}
-function submitOrder(){if(!cartItems.length)return alert("Agrega al menos un producto.");const p=calculateCart(cartItems,orderType.value,paymentMethod.value),d=new Date(),o=buildOrder({customer:currentUser.name,phone:currentUser.phone,userId:currentUser.id,origin:"App cliente",type:orderType.value,address:deliveryAddress.value.trim(),reference:deliveryReference.value.trim(),coords:currentCoords,payment:p.method,items:cartItems,calc:p,status:"Pendiente",acceptedAt:null});orders.unshift(o);persist();alert("Pedido enviado. Queda pendiente de aceptación por Pedreburguer.");cartItems=[];currentCoords=null;deliveryAddress.value="";deliveryReference.value="";gpsMessage.textContent="Puedes enviar tu ubicación para facilitar el delivery.";gpsLink.classList.add("hidden");renderCart();renderMyOrders();}
-function buildOrder(x){const d=new Date();return{id:orders.length?Math.max(...orders.map(o=>o.id))+1:1,date:d.toLocaleDateString("es-VE"),time:d.toLocaleTimeString("es-VE",{hour:"2-digit",minute:"2-digit"}),userId:x.userId||null,customer:x.customer||"Cliente",phone:x.phone||"",origin:x.origin||"Manual",type:x.type,address:x.address,reference:x.reference,coords:x.coords,payment:x.payment,items:JSON.parse(JSON.stringify(x.items)),subtotal:x.calc.subtotal,delivery:x.calc.delivery,fee:x.calc.fee,total:x.calc.total,bsRate:configuration.bsRate,usdRate:configuration.usdRate,status:x.status||"Pendiente",acceptedAt:x.acceptedAt||null,paymentStatus:"Pendiente",paymentReference:"",paymentSender:""};}
-
-function statusTrack(status){const steps=["Pendiente","Aceptado","Preparando","Listo"];let idx=steps.indexOf(status);if(status==="Entregado")idx=4;return `<div class="status-track">${steps.map((s,i)=>`<div class="track-step ${i<idx?"done":i===idx?"now":""}">${s}</div>`).join("")}</div>`;}
-function renderMyOrders(){
- const mine=orders.filter(x=>x.userId===currentUser?.id);
- myOrdersList.innerHTML=mine.length?mine.map(o=>`
- <div class="ticket">
-   <div class="ticket-head"><div><div class="ticket-id">#${String(o.id).padStart(3,"0")}</div><div class="muted">${o.date} · ${o.time}</div></div><span class="status ${o.status}">${o.status}</span></div>
-   ${!["Rechazado","Cancelado"].includes(o.status)?statusTrack(o.status):""}
-   <div class="ticket-products">${productsHtml(o.items)}</div>
-   <div><b>Pago:</b> ${o.payment}</div>
-   <div style="margin-top:6px"><span class="paybadge pay-${o.paymentStatus||"Pendiente"}">${o.paymentStatus||"Pendiente"}</span></div>
-   <div class="ticket-total">${money(o.total)}${o.payment==="Pago móvil (Bs)"?`<br>${bs(o.total/o.bsRate)}`:""}</div>
-   ${o.paymentStatus==="Pendiente" && !["Cancelado","Rechazado"].includes(o.status)?`<button class="secondary full" style="margin-top:9px" onclick="reportPayment(${o.id})">Ya pagué / Reportar pago</button><p class="muted">Solo pediremos referencia y, si aplica, nombre del remitente. La captura no será obligatoria.</p>`:""}
-   ${o.paymentStatus==="Reportado"?`<div class="payment-data"><b>Pago reportado.</b><br>Referencia: ${o.paymentReference||"-"}${o.paymentSender?`<br>Envía: ${o.paymentSender}`:""}<br>Esperando verificación.</div>`:""}
-   ${o.paymentStatus==="Verificado"?`<div class="payment-data"><b>✓ Pago verificado</b></div>`:""}
-   ${o.status==="Pendiente"?`<button class="dangerbtn full" style="margin-top:8px" onclick="cancelPending(${o.id})">Cancelar pedido</button>`:""}
- </div>`).join(""):'<p class="muted">Todavía no tienes pedidos.</p>';
+function renderMenu(){
+  const tabs=categoryTabs("client");
+  if(!activeCategory){
+    menuList.innerHTML=tabs+`
+      <div class="category-empty">
+        <div style="font-size:42px">🍽️</div>
+        <b>Elige una categoría</b>
+        <div class="muted">Toca una opción para ver sus productos.</div>
+      </div>`;
+    bindCategoryButtons("client");
+    return;
+  }
+  const list=visibleProducts();
+  menuList.innerHTML=tabs+
+    `<div class="category-title">${categoryIcon(activeCategory)} ${esc(activeCategory)}</div>`+
+    `<div class="category-products">${
+      list.map(({p,i})=>`
+        <div class="product ${p.available?'':'off'}">
+          <b>${esc(p.name)}</b>
+          <div class="price">${money(p.price)}</div>
+          ${p.available
+            ? `<button class="primary full" onclick="addToCart(${i})">Agregar</button>`
+            : `<button class="secondary full" disabled>AGOTADO</button>`}
+        </div>`).join("")
+    }</div>`;
+  bindCategoryButtons("client");
 }
-function reportPayment(id){
- const o=orders.find(x=>x.id===id);if(!o)return;
- let ref=prompt("Referencia o número de operación (si aplica):",o.paymentReference||"");if(ref===null)return;
- let sender="";
- if(o.payment.startsWith("Zelle"))sender=prompt("Nombre de quien envió el Zelle:",o.paymentSender||"")||"";
- else if(o.payment.startsWith("Pago móvil"))sender=prompt("Nombre o teléfono desde donde hicieron el Pago Móvil (opcional):",o.paymentSender||"")||"";
- else if(o.payment.startsWith("Nequi")||o.payment.startsWith("Bancolombia"))sender=prompt("Nombre de quien hizo la transferencia (opcional):",o.paymentSender||"")||"";
- o.paymentReference=(ref||"").trim();o.paymentSender=sender.trim();o.paymentStatus="Reportado";persist();renderMyOrders();alert("Pago reportado. Pedreburguer lo verificará.");
+
+function renderManualMenu(){
+  const tabs=categoryTabs("manual");
+  if(!activeCategory){
+    manualMenu.innerHTML=tabs+`
+      <div class="category-empty">
+        <div style="font-size:42px">🍽️</div>
+        <b>Elige una categoría</b>
+        <div class="muted">Selecciona una categoría para ver sus productos.</div>
+      </div>`;
+    bindCategoryButtons("manual");
+    return;
+  }
+  const list=visibleProducts();
+  manualMenu.innerHTML=tabs+
+    `<div class="category-title">${categoryIcon(activeCategory)} ${esc(activeCategory)}</div>`+
+    `<div class="category-products">${
+      list.map(({p,i})=>`
+        <div class="product ${p.available?'':'off'}">
+          <b>${esc(p.name)}</b>
+          <div class="price">${money(p.price)}</div>
+          ${p.available
+            ? `<button class="primary full" onclick="addManual(${i})">Agregar</button>`
+            : `<button class="secondary full" disabled>AGOTADO</button>`}
+        </div>`).join("")
+    }</div>`;
+  bindCategoryButtons("manual");
 }
-function cancelPending(id){const o=orders.find(x=>x.id===id);if(!o||o.status!=="Pendiente")return alert("Este pedido ya no puede cancelarse desde la app.");if(confirm("¿Cancelar este pedido?")){o.status="Cancelado";persist();renderMyOrders();}}
-
-function productsHtml(items){return items.map(x=>`<div class="ticket-product"><b>1× ${x.name}</b>${x.without.length?`<div class="mods sin"><b>SIN:</b> ${x.without.join(", ")}</div>`:""}${x.extras.length?`<div class="mods extra"><b>EXTRA:</b> ${x.extras.join(", ")}</div>`:""}</div>`).join("");}
-function renderWorkOrders(){if(currentUser?.role!=="admin")return;pendingCounter.textContent=orders.filter(x=>x.status==="Pendiente").length+" pendientes";workOrdersList.innerHTML=orders.length?orders.map(o=>`<div class="ticket"><div class="ticket-head"><div><div class="ticket-id">#${String(o.id).padStart(3,"0")}</div><b>${o.customer}</b><div class="muted">${o.date} · ${o.time} · ${o.phone} · ${o.origin}</div></div><span class="status ${o.status}">${o.status}</span></div><div class="chips"><span class="chip">${o.type}</span><span class="chip">${o.payment}</span></div>${o.address?`<div>📍 ${o.address}</div>`:""}${o.reference?`<div class="muted">Ref: ${o.reference}</div>`:""}${o.coords?`<div class="map-actions"><a target="_blank" href="https://www.google.com/maps/dir/?api=1&destination=${o.coords.lat},${o.coords.lng}"><button class="dark" type="button">🗺️ Cómo llegar</button></a><a target="_blank" href="https://www.google.com/maps?q=${o.coords.lat},${o.coords.lng}"><button class="secondary" type="button">Ver punto</button></a></div>`:""}<div class="ticket-products">${productsHtml(o.items)}</div><div class="payment-data"><b>Pago:</b> ${o.payment}<br><span class="paybadge pay-${o.paymentStatus||"Pendiente"}">${o.paymentStatus||"Pendiente"}</span>${o.paymentReference?`<br>Ref: ${o.paymentReference}`:""}${o.paymentSender?`<br>Envía: ${o.paymentSender}`:""}</div><div class="ticket-total">${money(o.total)}${o.payment==="Pago móvil (Bs)"?`<br><span style="color:#17833b">${bs(o.total/o.bsRate)}</span>`:""}</div><div class="admin-actions">${o.status==="Pendiente"?`<button class="primary" onclick="acceptOrder(${o.id})">✓ Aceptar pedido</button><button class="dangerbtn" onclick="rejectOrder(${o.id})">✕ Rechazar</button>`:""}${!["Pendiente","Rechazado","Cancelado","Entregado"].includes(o.status)?`<select onchange="changeOrderStatus(${o.id},this.value)">${["Aceptado","Preparando","Listo","Entregado"].map(s=>`<option ${s===o.status?"selected":""}>${s}</option>`).join("")}</select>`:""}<button class="dark" onclick="printTicket(${o.id})">🖨️ Ticket</button></div></div>`).join(""):'<p class="muted">Todavía no hay pedidos.</p>';}
-function acceptOrder(id){const o=orders.find(x=>x.id===id);if(o&&o.status==="Pendiente"){o.status="Aceptado";o.acceptedAt=new Date().toISOString();persist();renderWorkOrders();}}
-function rejectOrder(id){const o=orders.find(x=>x.id===id);if(o&&o.status==="Pendiente"){o.status="Rechazado";persist();renderWorkOrders();}}
-function changeOrderStatus(id,status){const o=orders.find(x=>x.id===id);if(o)o.status=status;persist();renderWorkOrders();}
 
 
-function renderPayments(){
- if(currentUser?.role!=="admin")return;
- const reported=orders.filter(o=>o.paymentStatus==="Reportado");
- reportedPaymentsCounter.textContent=reported.length+" reportados";
- paymentsList.innerHTML=reported.length?reported.map(o=>`
- <div class="ticket">
-   <div class="ticket-head"><div><div class="ticket-id">#${String(o.id).padStart(3,"0")}</div><b>${o.customer}</b><div class="muted">${o.date} · ${o.time} · ${o.phone}</div></div><span class="paybadge pay-Reportado">Reportado</span></div>
-   <div class="chips"><span class="chip">${o.payment}</span><span class="chip">${o.origin}</span></div>
-   <div class="payment-data"><b>Referencia:</b> ${o.paymentReference||"Sin referencia"}${o.paymentSender?`<br><b>Envía:</b> ${o.paymentSender}`:""}<br><b>Monto:</b> ${money(o.total)}${o.payment==="Pago móvil (Bs)"?` · ${bs(o.total/o.bsRate)}`:""}</div>
-   <div class="admin-actions"><button class="primary" onclick="verifyPayment(${o.id})">✓ Marcar verificado</button><button class="secondary" onclick="markPaymentPending(${o.id})">Devolver a pendiente</button><button class="dark" onclick="printTicket(${o.id})">🖨️ Ticket</button></div>
- </div>`).join(""):'<p class="muted">No hay pagos reportados pendientes de verificar.</p>';
-}
-function verifyPayment(id){const o=orders.find(x=>x.id===id);if(o){o.paymentStatus="Verificado";persist();renderPayments();renderWorkOrders();}}
-function markPaymentPending(id){const o=orders.find(x=>x.id===id);if(o){o.paymentStatus="Pendiente";persist();renderPayments();renderWorkOrders();}}
-
-function renderManualMenu(){manualMenu.innerHTML=products.map((p,i)=>`<div class="product ${p.available?"":"off"}"><b>${p.name}</b><div class="price">${money(p.price)}</div>${p.available?`<button class="primary full" onclick="addManual(${i})">Agregar</button>`:`<button class="secondary full" disabled>AGOTADO</button>`}</div>`).join("");}
 function addManual(i){manualCartItems.push({name:products[i].name,price:products[i].price,without:[],extras:[]});renderManualCart();}
 function renderManualCart(){if(!manualCartItems.length){manualCart.innerHTML='<p class="muted">Sin productos.</p>';manualSummary.innerHTML="";return;}manualCart.innerHTML=manualCartItems.map((x,i)=>itemEditor(x,i,"manual")).join("");const p=calculateCart(manualCartItems,manualType.value,document.getElementById("manualPaymentMethod")?.value||"Pago móvil (Bs)");manualSummary.innerHTML=paymentSummary(p,"manual");}
 function submitManualOrder(){if(!manualCartItems.length)return alert("Agrega al menos un producto.");const method=manualPaymentMethod.value,p=calculateCart(manualCartItems,manualType.value,method);let coords=null;if(manualLat.value&&manualLng.value)coords={lat:Number(manualLat.value),lng:Number(manualLng.value)};const o=buildOrder({customer:manualName.value.trim()||"Cliente",phone:manualPhone.value.trim(),origin:manualOrigin.value,type:manualType.value,address:manualAddress.value.trim(),reference:manualReference.value.trim(),coords,payment:p.method,items:manualCartItems,calc:p,status:"Aceptado",acceptedAt:new Date().toISOString()});orders.unshift(o);persist();alert("Ticket #"+String(o.id).padStart(3,"0")+" creado.");manualCartItems=[];manualName.value="";manualPhone.value="";manualAddress.value="";manualReference.value="";manualLat.value="";manualLng.value="";renderManualCart();renderWorkOrders();}
@@ -687,9 +741,38 @@ async function categoryApi(action,data={}){const r=await fetch(PB_CAT_API,{metho
 function categoryName(p){return (p.category||"Otros").trim()||"Otros";}
 function categoryIcon(c){const x=c.toLowerCase();if(x.includes("hamb"))return "🍔";if(x.includes("refresc")||x.includes("bebid"))return "🥤";if(x.includes("papa"))return "🍟";if(x.includes("postre"))return "🍰";if(x.includes("perro"))return "🌭";if(x.includes("combo"))return "🍱";return "🍽️";}
 function categories(){return [...new Set(products.map(categoryName))];}
-function categoryTabs(mode){const cats=categories();if(activeCategory&&!cats.includes(activeCategory))activeCategory="";return `<div class="category-tabs">${cats.map(c=>`<button class="category-tab ${activeCategory===c?'active':''}" onclick="setCategory(${JSON.stringify(c)},'${mode}')">${categoryIcon(c)} ${c}</button>`).join("")}</div>`;}
-function setCategory(c,mode){activeCategory=c;if(mode==='manual')renderManualMenu();else renderMenu();}
-function visibleProducts(){if(!activeCategory)return [];return products.map((p,i)=>({p,i})).filter(x=>categoryName(x.p)===activeCategory);}
+function categoryTabs(mode){
+  const cats=categories();
+  if(activeCategory && !cats.includes(activeCategory)) activeCategory="";
+  return `<div class="category-grid">${
+    cats.map((c,idx)=>`
+      <button type="button"
+        class="category-card ${activeCategory===c?'active':''}"
+        data-cat-index="${idx}"
+        data-mode="${mode}">
+        <span class="category-emoji">${categoryIcon(c)}</span>
+        <span>${esc(c)}</span>
+      </button>`).join("")
+  }</div>`;
+}
+
+function bindCategoryButtons(mode){
+  document.querySelectorAll(`.category-card[data-mode="${mode}"]`).forEach(btn=>{
+    btn.onclick=()=>{
+      const cats=categories();
+      const idx=Number(btn.dataset.catIndex);
+      activeCategory=cats[idx]||"";
+      if(mode==="manual") renderManualMenu();
+      else renderMenu();
+    };
+  });
+}
+
+function visibleProducts(){
+  if(!activeCategory) return [];
+  return products.map((p,i)=>({p,i})).filter(x=>categoryName(x.p)===activeCategory);
+}
+
 function renderMenu(){const tabs=categoryTabs('client');if(!activeCategory){menuList.innerHTML=tabs+`<div class="category-empty"><div style="font-size:40px">🍽️</div><b>Elige una categoría</b><div class="muted">Toca una opción arriba para abrir esa carta.</div></div>`;return;}menuList.innerHTML=tabs+`<div class="category-title">${categoryIcon(activeCategory)} ${activeCategory}</div>`+visibleProducts().map(({p,i})=>`<div class="product ${p.available?'':'off'}"><b>${p.name}</b><div class="price">${money(p.price)}</div>${p.available?`<button class="primary full" onclick="addToCart(${i})">Agregar</button>`:`<button class="secondary full" disabled>AGOTADO</button>`}</div>`).join("");}
 function renderManualMenu(){const tabs=categoryTabs('manual');if(!activeCategory){manualMenu.innerHTML=tabs+`<div class="category-empty"><div style="font-size:40px">🍽️</div><b>Elige una categoría</b><div class="muted">Selecciona una categoría para ver sus productos.</div></div>`;return;}manualMenu.innerHTML=tabs+`<div class="category-title">${categoryIcon(activeCategory)} ${activeCategory}</div>`+visibleProducts().map(({p,i})=>`<div class="product ${p.available?'':'off'}"><b>${p.name}</b><div class="price">${money(p.price)}</div>${p.available?`<button class="primary full" onclick="addManual(${i})">Agregar</button>`:`<button class="secondary full" disabled>AGOTADO</button>`}</div>`).join("");}
 async function loadProductCategories(){try{const j=await categoryApi('list');products.forEach(p=>p.category=j.categories?.[p.id]||p.category||'Otros');renderMenu();if(currentUser?.role==='admin'){renderManualMenu();renderAdmin();}}catch(e){console.error(e)}}
