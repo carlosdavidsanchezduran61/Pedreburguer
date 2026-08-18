@@ -764,9 +764,15 @@ function businessAcceptingOrders(){
 }
 
 // ===== CATEGORÍAS DE PRODUCTOS V1 =====
-const PB_CAT_API="https://ojoirllxbyzhhmcfyxwy.supabase.co/functions/v1/pedreburguer-categories";
+var PB_CAT_API="https://ojoirllxbyzhhmcfyxwy.supabase.co/functions/v1/pedreburguer-categories";
 let activeCategory="";
-async function categoryApi(action,data={}){const r=await fetch(PB_CAT_API,{method:"POST",headers:{"Content-Type":"application/json","apikey":PB_KEY},body:JSON.stringify({action,...data})});let j={};try{j=await r.json()}catch{}if(!r.ok)throw new Error(j.error||"No se pudo guardar la categoría.");return j;}
+async function categoryApi(action,data={}){
+  const endpoint=PB_CAT_API||"https://ojoirllxbyzhhmcfyxwy.supabase.co/functions/v1/pedreburguer-categories";
+  const r=await fetch(endpoint,{method:"POST",headers:{"Content-Type":"application/json","apikey":PB_KEY},body:JSON.stringify({action,...data})});
+  let j={};try{j=await r.json()}catch{}
+  if(!r.ok)throw new Error(j.error||"No se pudo procesar la categoría.");
+  return j;
+}
 function categoryName(p){return (p.category||"Otros").trim()||"Otros";}
 function categoryIcon(c){const x=c.toLowerCase();if(x.includes("hamb"))return "🍔";if(x.includes("refresc")||x.includes("bebid"))return "🥤";if(x.includes("papa"))return "🍟";if(x.includes("postre"))return "🍰";if(x.includes("perro"))return "🌭";if(x.includes("combo"))return "🍱";return "🍽️";}
 function categories(){return [...new Set(products.map(categoryName))];}
@@ -804,10 +810,49 @@ function visibleProducts(){
 
 function renderMenu(){const tabs=categoryTabs('client');if(!activeCategory){menuList.innerHTML=tabs+`<div class="category-empty"><div style="font-size:40px">🍽️</div><b>Elige una categoría</b><div class="muted">Toca una opción arriba para abrir esa carta.</div></div>`;return;}menuList.innerHTML=tabs+`<div class="category-title">${categoryIcon(activeCategory)} ${activeCategory}</div>`+visibleProducts().map(({p,i})=>`<div class="product ${p.available?'':'off'}"><b>${p.name}</b><div class="price">${money(p.price)}</div>${p.available?`<button class="primary full" onclick="addToCart(${i})">Agregar</button>`:`<button class="secondary full" disabled>AGOTADO</button>`}</div>`).join("");}
 function renderManualMenu(){const tabs=categoryTabs('manual');if(!activeCategory){manualMenu.innerHTML=tabs+`<div class="category-empty"><div style="font-size:40px">🍽️</div><b>Elige una categoría</b><div class="muted">Selecciona una categoría para ver sus productos.</div></div>`;return;}manualMenu.innerHTML=tabs+`<div class="category-title">${categoryIcon(activeCategory)} ${activeCategory}</div>`+visibleProducts().map(({p,i})=>`<div class="product ${p.available?'':'off'}"><b>${p.name}</b><div class="price">${money(p.price)}</div>${p.available?`<button class="primary full" onclick="addManual(${i})">Agregar</button>`:`<button class="secondary full" disabled>AGOTADO</button>`}</div>`).join("");}
-async function loadProductCategories(){try{const j=await categoryApi('list');products.forEach(p=>p.category=j.categories?.[p.id]||p.category||'Otros');renderMenu();if(currentUser?.role==='admin'){renderManualMenu();renderAdmin();}}catch(e){console.error(e)}}
+async function loadProductCategories(){
+  try{
+    const j=await categoryApi("list");
+    products.forEach(p=>p.category=j.categories?.[p.id]||p.category||"Otros");
+  }catch(e){
+    console.error("Categorías:",e);
+    products.forEach(p=>p.category=p.category||"Otros");
+  }finally{
+    renderMenu();
+    if(currentUser?.role==="admin"){renderManualMenu();renderAdmin();}
+  }
+}
 function renderAdmin(){if(currentUser?.role!=="admin")return;bsRateInput.value=configuration.bsRate;usdRateInput.value=configuration.usdRate;deliveryFeeInput.value=configuration.delivery;extraFeeInput.value=configuration.extra;zelleFeeInput.value=configuration.fees.Zelle;nequiFeeInput.value=configuration.fees.Nequi;bancoFeeInput.value=configuration.fees.Bancolombia;pmBank.value=paymentAccounts.pmBank;pmPhone.value=paymentAccounts.pmPhone;pmId.value=paymentAccounts.pmId;zelleAccount.value=paymentAccounts.zelle;nequiAccount.value=paymentAccounts.nequi;bancoAccount.value=paymentAccounts.bancolombia;accountHolder.value=paymentAccounts.holder;adminProducts.innerHTML=products.map((p,i)=>`<div class="admin-row"><div class="row"><input id="prodName${i}" value="${p.name}"><input id="prodPrice${i}" type="number" value="${p.price}"></div><label>Categoría<input id="prodCategory${i}" value="${categoryName(p)}" placeholder="Ej: Hamburguesas"></label><div class="admin-actions"><button class="secondary" onclick="saveProduct(${i})">Guardar</button><button class="secondary" onclick="toggleProduct(${i})">${p.available?'Marcar agotado':'Reactivar'}</button></div></div>`).join("");}
-async function saveProduct(i){const p={...products[i],name:document.getElementById("prodName"+i).value.trim()||products[i].name,price:Number(document.getElementById("prodPrice"+i).value)||products[i].price,category:document.getElementById("prodCategory"+i).value.trim()||"Otros"};try{await api("save_product",{adminPassword:pbAdminPassword,product:p});await categoryApi("save",{adminPassword:pbAdminPassword,productId:p.id,category:p.category});products[i]=p;renderAdmin();renderMenu();renderManualMenu();}catch(e){alert(e.message)}}
-async function addProduct(){const n=newProductName.value.trim(),p=Number(newProductPrice.value),c=(document.getElementById('newProductCategory')?.value||'Otros').trim()||'Otros';if(!n||!p)return alert("Coloca nombre y precio.");try{const j=await api("add_product",{adminPassword:pbAdminPassword,product:{name:n,price:p}});j.product.category=c;await categoryApi("save",{adminPassword:pbAdminPassword,productId:j.product.id,category:c});products.push(j.product);newProductName.value="";newProductPrice.value="";document.getElementById('newProductCategory').value="";renderAdmin();renderMenu();renderManualMenu();}catch(e){alert(e.message)}}
+async function saveProduct(i){
+  const p={...products[i],
+    name:document.getElementById("prodName"+i).value.trim()||products[i].name,
+    price:Number(document.getElementById("prodPrice"+i).value)||products[i].price,
+    category:document.getElementById("prodCategory"+i).value.trim()||"Otros"};
+  try{
+    await api("save_product",{adminPassword:pbAdminPassword,product:p});
+    try{await categoryApi("save",{adminPassword:pbAdminPassword,productId:p.id,category:p.category});}
+    catch(catErr){console.error("Categoría:",catErr);}
+    products[i]=p;renderAdmin();renderMenu();renderManualMenu();
+  }catch(e){alert(e.message);}
+}
+async function addProduct(){
+  const n=newProductName.value.trim();
+  const p=Number(newProductPrice.value);
+  const c=(document.getElementById("newProductCategory")?.value||"Otros").trim()||"Otros";
+  if(!n||!p)return alert("Coloca nombre y precio.");
+  try{
+    const j=await api("add_product",{adminPassword:pbAdminPassword,product:{name:n,price:p}});
+    j.product.category=c;
+    products.push(j.product);
+    try{await categoryApi("save",{adminPassword:pbAdminPassword,productId:j.product.id,category:c});}
+    catch(catErr){console.error("Categoría:",catErr);}
+    newProductName.value="";
+    newProductPrice.value="";
+    const ci=document.getElementById("newProductCategory");if(ci)ci.value="";
+    renderAdmin();renderMenu();renderManualMenu();
+    alert("Producto agregado.");
+  }catch(e){alert(e.message);}
+}
 setTimeout(loadProductCategories,800);
 
 loadBusinessStatus();
