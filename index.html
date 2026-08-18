@@ -1,0 +1,330 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Pedreburguer V6 Online</title>
+<style>
+:root{--red:#d71920;--red2:#a90d13;--black:#0e0e0f;--bg:#f3f3f3;--line:#dedede;--muted:#6b6b6b;--green:#17833b;--amber:#a96d00}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:#171717;font-family:Arial,Helvetica,sans-serif}
+button{border:0;border-radius:10px;padding:11px 14px;font-weight:800;cursor:pointer}.primary{background:linear-gradient(180deg,var(--red),var(--red2));color:#fff}.secondary{background:#ececec;color:#111}.dark{background:#171717;color:#fff}.dangerbtn{background:#a00000;color:#fff}.full{width:100%}.hidden{display:none!important}.muted{font-size:13px;color:var(--muted)}.ok{color:var(--green);font-weight:800}.danger{color:#a00000;font-weight:700}
+.brand-shell{background:radial-gradient(circle at 20% 10%,rgba(215,25,32,.24),transparent 30%),linear-gradient(145deg,#0a0a0b,#171719 65%,#0b0b0c);color:#fff;border-bottom:3px solid var(--red)}
+.brandbar{max-width:1100px;margin:auto;padding:13px 15px;display:flex;align-items:center;gap:13px}.brandmark{width:175px;max-width:55vw;height:auto;display:block}.brand-copy{margin-left:auto;text-align:right}.brand-copy b{display:block;font-size:13px}.brand-copy span{font-size:11px;color:#aaa}
+nav{position:sticky;top:0;z-index:10;background:#fff;border-bottom:1px solid var(--line);display:flex;gap:7px;padding:9px;overflow:auto}nav button{white-space:nowrap}.nav-on{background:#111;color:#fff}
+main{max-width:1080px;margin:16px auto;padding:0 12px}.card{background:#fff;border:1px solid var(--line);border-radius:16px;padding:17px;margin-bottom:14px;box-shadow:0 2px 12px rgba(0,0,0,.035)}
+.auth-card{max-width:520px;margin:25px auto;padding:20px}.auth-brand{background:#111;border-radius:15px;padding:16px;margin-bottom:16px;display:flex;justify-content:center}.auth-brand svg{width:240px;max-width:90%;height:auto}
+h2,h3{margin-top:0}input,select,textarea{width:100%;padding:11px;border:1px solid #aaa;border-radius:9px;font:inherit;background:#fff}label{display:block;font-size:13px;font-weight:800;margin-top:10px}
+.row{display:flex;gap:9px}.row>*{flex:1}.grid2{display:grid;grid-template-columns:1.2fr .8fr;gap:14px}
+.product,.ticket,.admin-row{border:1px solid var(--line);border-radius:12px;padding:13px;margin:8px 0;background:#fff}.product.off{opacity:.53}.price{font-size:19px;font-weight:900;margin:6px 0}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin:7px 0}.chip{font-size:11px;background:#f0f0f0;border-radius:20px;padding:5px 8px}.checks{display:grid;grid-template-columns:1fr 1fr;gap:5px}.checks label{font-weight:400;margin:0}.checks input{width:auto}
+.total{font-size:20px;font-weight:900;border-top:1px solid var(--line);padding-top:10px;margin-top:10px}.rate{background:#fff4d6;border:1px solid #dfc568;border-radius:10px;padding:11px;margin-top:10px}.payment-data{background:#eef7ff;border:1px solid #a9cbe8;border-radius:10px;padding:11px;margin-top:10px}
+.mapbox{border:1px dashed #aaa;border-radius:10px;padding:12px;margin-top:9px}.map-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:7px}
+.ticket-head{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}.ticket-id{font-size:22px;font-weight:900}.status{font-size:11px;border-radius:20px;padding:5px 8px;font-weight:900;background:#eee}
+.status.Pendiente{background:#ffe3e3;color:#a00000}.status.Aceptado{background:#e6efff;color:#16499a}.status.Preparando{background:#fff1cb;color:#8c5900}.status.Listo{background:#dff5e6;color:#126a31}.status.Entregado{background:#e7e7e7;color:#333}.status.Rechazado,.status.Cancelado{background:#f3dede;color:#7e1414}.paybadge{display:inline-block;border-radius:20px;padding:5px 8px;font-size:11px;font-weight:900}.pay-Pendiente{background:#fff1cb;color:#8c5900}.pay-Reportado{background:#e6efff;color:#16499a}.pay-Verificado{background:#dff5e6;color:#126a31}
+.ticket-products{margin:10px 0;border-top:1px dashed #bbb;border-bottom:1px dashed #bbb;padding:8px 0}.ticket-product{padding:7px 0}.mods{font-size:12px;margin-top:3px}.sin{color:#9b1d1d}.extra{color:#0d6b31}.ticket-total{font-size:20px;font-weight:900;text-align:right}
+.admin-actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:9px}.section-title{display:flex;justify-content:space-between;align-items:center;gap:10px}.counter{background:var(--red);color:#fff;border-radius:20px;padding:4px 8px;font-size:12px}
+.status-track{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;margin:10px 0}.track-step{font-size:10px;text-align:center;padding:6px 3px;border-radius:7px;background:#eee}.track-step.done{background:#dff5e6;color:#126a31;font-weight:800}.track-step.now{background:#111;color:#fff;font-weight:800}
+hr{border:0;border-top:1px solid var(--line);margin:15px 0}
+@media(max-width:760px){.grid2{grid-template-columns:1fr}.row{flex-direction:column}.brand-copy{display:none}.brandbar{justify-content:center}.brandmark{width:205px}.checks{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+
+<template id="brandLogo">
+<svg viewBox="0 0 520 230" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Pedreburguer">
+  <defs><linearGradient id="rg" x1="0" x2="1"><stop stop-color="#ef252c"/><stop offset="1" stop-color="#b90d14"/></linearGradient></defs>
+  <path d="M92 92 A168 120 0 0 1 428 92" fill="none" stroke="url(#rg)" stroke-width="9"/>
+  <path d="M106 170 A165 113 0 0 0 414 170" fill="none" stroke="url(#rg)" stroke-width="9"/>
+  <g transform="translate(207 14)" stroke="#d71920" stroke-width="7" fill="none" stroke-linejoin="round">
+    <path d="M8 46 Q53 2 98 46 Q100 55 94 58 H12 Q6 55 8 46Z" fill="#d71920"/>
+    <path d="M10 66 H96 Q103 66 96 76 H10 Q3 66 10 66Z"/>
+    <path d="M15 84 H91 L75 99 H31 Z"/><path d="M11 107 H95 Q101 107 98 118 H8 Q5 107 11 107Z"/>
+    <circle cx="32" cy="34" r="2.5" fill="#111" stroke="none"/><circle cx="50" cy="26" r="2.5" fill="#111" stroke="none"/><circle cx="69" cy="34" r="2.5" fill="#111" stroke="none"/>
+  </g>
+  <text x="260" y="156" text-anchor="middle" font-family="Arial Black,Arial,sans-serif" font-size="56" font-weight="900" letter-spacing="-2"><tspan fill="#ffffff">PEDRE</tspan><tspan fill="#d71920">BURGUER</tspan></text>
+  <g fill="#d71920" transform="translate(180 180)"><text x="0" y="0" font-size="31">★ ★ ★ ★ ★</text></g>
+</svg>
+</template>
+
+<header class="brand-shell"><div class="brandbar"><div id="headerLogo" class="brandmark"></div><div class="brand-copy"><b>Sistema de pedidos</b><span>Pedreburguer V6 Online</span></div></div></header>
+
+<div id="authView" class="card auth-card">
+  <div class="auth-brand" id="authLogo"></div>
+  <div id="loginPanel">
+    <h2>Bienvenido</h2>
+    <label>Teléfono<input id="loginPhone" placeholder="0414..."></label>
+    <label>Contraseña<input id="loginPassword" type="password"></label>
+    <button class="primary full" style="margin-top:12px" onclick="doLogin()">Iniciar sesión</button>
+    <button class="secondary full" style="margin-top:8px" onclick="openRegister()">Crear cuenta</button>
+    <button class="secondary full" style="margin-top:8px" onclick="forgotPassword()">¿Olvidaste tu contraseña?</button>
+    <p id="loginMessage" class="danger"></p>
+  </div>
+  <div id="registerPanel" class="hidden">
+    <h2>Crear cuenta</h2>
+    <label>Nombre completo<input id="registerName"></label>
+    <label>Teléfono<input id="registerPhone"></label>
+    <label>Contraseña<input id="registerPassword" type="password"></label>
+    <label>Confirmar contraseña<input id="registerPassword2" type="password"></label>
+    <button class="primary full" style="margin-top:12px" onclick="createAccount()">Crear mi cuenta</button>
+    <button class="secondary full" style="margin-top:8px" onclick="openLogin()">Volver</button>
+    <p id="registerMessage"></p>
+  </div>
+  <p class="muted">Versión online conectada a Pedreburguer. Tus pedidos se guardan en internet.</p>
+</div>
+
+<div id="appView" class="hidden">
+<nav>
+  <button id="navShop" class="nav-client nav-on" onclick="showView('shopView',this)">🍔 Pedir</button>
+  <button id="navMyOrders" class="nav-client" onclick="showView('myOrdersView',this)">📦 Mis pedidos</button>
+  <button id="navWorkOrders" class="nav-admin hidden" onclick="showView('workOrdersView',this)">🧾 Pedidos</button>
+  <button id="navManualOrder" class="nav-admin hidden" onclick="showView('manualOrderView',this)">➕ Pedido manual</button>
+  <button id="navPayments" class="nav-admin hidden" onclick="showView('paymentsView',this)">💰 Pagos</button>
+  <button id="navAdmin" class="nav-admin hidden" onclick="showView('adminView',this)">⚙️ Administración</button>
+  <button onclick="logout()">Salir</button>
+</nav>
+
+<main>
+<section id="shopView">
+<div class="card"><h2>Hola, <span id="helloName"></span> 👋</h2><p class="muted">Precios base en COP. Pago móvil se convierte automáticamente a Bs con la tasa del día.</p></div>
+<div class="grid2">
+<div>
+<div class="card"><h2>🍔 Menú</h2><div id="menuList"></div></div>
+<div class="card">
+<h3>📍 Entrega</h3>
+<label>Tipo<select id="orderType" onchange="renderCart()"><option>Delivery</option><option>Retiro</option></select></label>
+<label>Dirección<input id="deliveryAddress" placeholder="Dirección"></label>
+<label>Referencia<textarea id="deliveryReference" rows="2"></textarea></label>
+<div class="mapbox"><b>📍 Ubicación en tiempo real</b><p id="gpsMessage" class="muted">Puedes enviar tu ubicación para facilitar el delivery.</p><div class="map-actions"><button class="secondary" onclick="captureGPS()">Usar mi ubicación</button><a id="gpsLink" target="_blank" class="hidden"><button class="dark" type="button">Abrir mapa</button></a></div></div>
+</div>
+</div>
+<div class="card"><h2>🛒 Carrito</h2><div id="cartList"></div><div id="cartSummary"></div><button class="primary full" style="margin-top:10px" onclick="submitOrder()">Enviar pedido</button></div>
+</div>
+</section>
+
+<section id="myOrdersView" class="hidden"><div class="card"><h2>📦 Mis pedidos</h2><div id="myOrdersList"></div></div></section>
+<section id="paymentsView" class="hidden"><div class="card"><div class="section-title"><h2 style="margin:0">💰 Control de pagos</h2><span id="reportedPaymentsCounter" class="counter">0 reportados</span></div><p class="muted">Aquí ves pagos reportados por los clientes para verificar referencia o remitente antes de retirar el dinero.</p><div id="paymentsList"></div></div></section>
+
+<section id="workOrdersView" class="hidden">
+<div class="card">
+<div class="section-title"><h2 style="margin:0">🧾 Pedidos de clientes</h2><span id="pendingCounter" class="counter">0 pendientes</span></div>
+<p class="muted">Aquí trabajas los tickets sin entrar a Administración. Los pedidos llegan primero como <b>Pendiente</b>; tú decides aceptar o rechazar.</p>
+<div id="workOrdersList"></div>
+</div>
+</section>
+
+<section id="manualOrderView" class="hidden">
+<div class="grid2">
+<div>
+<div class="card"><h2>➕ Crear pedido manual</h2><p class="muted">Para pedidos por WhatsApp, teléfono o mostrador.</p>
+<label>Nombre del cliente<input id="manualName" placeholder="Cliente"></label>
+<label>Teléfono<input id="manualPhone" placeholder="Teléfono"></label>
+<label>Origen<select id="manualOrigin"><option>WhatsApp</option><option>Teléfono</option><option>Mostrador</option></select></label>
+<label>Tipo<select id="manualType" onchange="renderManualCart()"><option>Delivery</option><option>Retiro</option></select></label>
+<label>Dirección<input id="manualAddress"></label>
+<label>Referencia<textarea id="manualReference" rows="2"></textarea></label>
+<div class="mapbox"><b>📍 Ubicación del cliente</b><p class="muted">Puedes pegar coordenadas si el cliente te comparte una ubicación.</p>
+<div class="row"><label>Latitud<input id="manualLat"></label><label>Longitud<input id="manualLng"></label></div></div>
+</div>
+<div class="card"><h2>🍔 Productos</h2><div id="manualMenu"></div></div>
+</div>
+<div class="card"><h2>🧾 Ticket manual</h2><div id="manualCart"></div><div id="manualSummary"></div><button class="primary full" onclick="submitManualOrder()">Crear ticket</button></div>
+</div>
+</section>
+
+<section id="adminView" class="hidden">
+<div class="card">
+<h2>⚙️ Configuración</h2>
+<h3>💱 Tasa COP → Bs</h3><label>1 Bs = <input id="bsRateInput" type="number" step="0.01" min="0.01"></label><div class="rate">18.000 COP ÷ 3,50 = <b>5.142,86 Bs</b>.</div>
+<h3 style="margin-top:17px">💵 Tasa USD</h3><label>1 USD = <input id="usdRateInput" type="number" step="0.01" min="0.01"></label>
+<h3 style="margin-top:17px">🛵 Delivery y extras</h3><div class="row"><label>Delivery (COP)<input id="deliveryFeeInput" type="number"></label><label>Extra (COP)<input id="extraFeeInput" type="number"></label></div>
+<h3 style="margin-top:17px">💳 Recargos</h3><div class="row"><label>Zelle %<input id="zelleFeeInput" type="number" step="0.1"></label><label>Nequi %<input id="nequiFeeInput" type="number" step="0.1"></label></div><label>Bancolombia %<input id="bancoFeeInput" type="number" step="0.1"></label>
+<button class="primary full" style="margin-top:12px" onclick="saveConfiguration()">Guardar configuración</button><p id="configMessage"></p>
+</div>
+
+<div class="card">
+<h2>🏦 Cuentas para cobrar</h2>
+<p class="muted">Estos datos se muestran al cliente cuando escoge el método de pago y quedan reflejados en el ticket.</p>
+<label>Pago móvil — Banco<input id="pmBank"></label>
+<div class="row"><label>Teléfono<input id="pmPhone"></label><label>Cédula/RIF<input id="pmId"></label></div>
+<label>Zelle — Correo<input id="zelleAccount"></label>
+<label>Nequi — Número<input id="nequiAccount"></label>
+<label>Bancolombia — Cuenta / número<input id="bancoAccount"></label>
+<label>Nombre del titular<input id="accountHolder"></label>
+<button class="primary full" style="margin-top:12px" onclick="savePaymentAccounts()">Guardar cuentas</button><p id="accountsMessage"></p>
+</div>
+
+<div class="card">
+<h2>🔐 Seguridad de administrador</h2>
+<label>Clave actual<input id="adminCurrentPass" type="password"></label>
+<label>Nueva clave<input id="adminNewPass" type="password"></label>
+<label>Confirmar nueva clave<input id="adminNewPass2" type="password"></label>
+<button class="primary full" style="margin-top:12px" onclick="changeAdminPassword()">Cambiar clave de administrador</button><p id="adminPassMessage"></p>
+</div>
+
+<div class="card">
+<h2>🍔 Productos</h2><div id="adminProducts"></div><hr><h3>Agregar producto</h3>
+<div class="row"><input id="newProductName" placeholder="Nombre"><input id="newProductPrice" type="number" placeholder="Precio COP"></div>
+<button class="primary full" style="margin-top:8px" onclick="addProduct()">Agregar producto</button>
+</div>
+</section>
+</main>
+</div>
+
+<script>
+const INGREDIENTS=["Cebolla","Tomate","Lechuga","Vegetales","Queso","Papitas rápidas","Huevo","Jamón","Mostaza","Salsa de tomate","Mayonesa","Salsas"];
+const DEFAULT_PRODUCTS=[
+{name:"Croqueta",price:18000,available:true},{name:"Milanesa de pollo",price:18000,available:true},{name:"Carne mechada",price:20000,available:true},
+{name:"Mixta croqueta y pollo",price:22000,available:true},{name:"Mixta croqueta y carne mechada",price:24000,available:true},
+{name:"Mixta milanesa y carne mechada",price:24000,available:true},{name:"Mixta tres carnes",price:28000,available:true}
+];
+let configuration=JSON.parse(localStorage.getItem("pb52_cfg")||"null")||{bsRate:3.5,usdRate:4000,delivery:2000,extra:1200,fees:{Zelle:5,Nequi:5,Bancolombia:5}};
+let paymentAccounts=JSON.parse(localStorage.getItem("pb52_accounts")||"null")||{pmBank:"",pmPhone:"",pmId:"",zelle:"",nequi:"",bancolombia:"",holder:""};
+let products=JSON.parse(localStorage.getItem("pb52_products")||"null")||DEFAULT_PRODUCTS;
+let users=JSON.parse(localStorage.getItem("pb52_users")||"[]");
+let orders=JSON.parse(localStorage.getItem("pb52_orders")||"[]");
+let currentUser=null,cartItems=[],manualCartItems=[],currentCoords=null;
+
+if(!users.some(x=>x.role==="admin")){users.push({id:"admin",name:"Administrador Pedreburguer",phone:"admin",password:"admin",role:"admin"});persist();}
+
+function persist(){localStorage.setItem("pb52_users",JSON.stringify(users));localStorage.setItem("pb52_products",JSON.stringify(products));localStorage.setItem("pb52_orders",JSON.stringify(orders));localStorage.setItem("pb52_cfg",JSON.stringify(configuration));localStorage.setItem("pb52_accounts",JSON.stringify(paymentAccounts));}
+function mountLogo(id){document.getElementById(id).appendChild(document.getElementById("brandLogo").content.cloneNode(true));}mountLogo("headerLogo");mountLogo("authLogo");
+const money=n=>new Intl.NumberFormat("es-CO").format(Math.round(n))+" COP";const bs=n=>new Intl.NumberFormat("es-VE",{minimumFractionDigits:2,maximumFractionDigits:2}).format(n)+" Bs";const usd=n=>"$"+Number(n).toFixed(2)+" USD";
+
+function openRegister(){loginPanel.classList.add("hidden");registerPanel.classList.remove("hidden");registerMessage.textContent="";}function openLogin(){registerPanel.classList.add("hidden");loginPanel.classList.remove("hidden");loginMessage.textContent="";}
+function createAccount(){const n=registerName.value.trim(),p=registerPhone.value.trim(),a=registerPassword.value,b=registerPassword2.value;registerMessage.className="danger";if(!n||!p||!a||!b)return registerMessage.textContent="Completa todos los campos.";if(a.length<6)return registerMessage.textContent="La contraseña debe tener mínimo 6 caracteres.";if(a!==b)return registerMessage.textContent="Las contraseñas no coinciden.";if(users.some(x=>x.phone===p))return registerMessage.textContent="Ese teléfono ya está registrado.";users.push({id:String(Date.now()),name:n,phone:p,password:a,role:"customer"});persist();registerMessage.className="ok";registerMessage.textContent="Cuenta creada correctamente.";loginPhone.value=p;setTimeout(openLogin,600);}
+function doLogin(){const p=loginPhone.value.trim(),a=loginPassword.value;currentUser=users.find(x=>x.phone===p&&x.password===a)||null;if(!currentUser){loginMessage.textContent="Teléfono o contraseña incorrectos.";return;}authView.classList.add("hidden");appView.classList.remove("hidden");helloName.textContent=currentUser.name;if(currentUser.role==="admin"){document.querySelectorAll(".nav-client").forEach(x=>x.classList.add("hidden"));document.querySelectorAll(".nav-admin").forEach(x=>x.classList.remove("hidden"));document.querySelectorAll("main section").forEach(x=>x.classList.add("hidden"));workOrdersView.classList.remove("hidden");document.querySelectorAll("nav button").forEach(x=>x.classList.remove("nav-on"));navWorkOrders.classList.add("nav-on");renderWorkOrders();renderPayments();renderAdmin();renderManualMenu();renderManualCart();}else{document.querySelectorAll(".nav-admin").forEach(x=>x.classList.add("hidden"));renderMenu();renderCart();renderMyOrders();}}
+function forgotPassword(){alert("La recuperación segura se conectará en la versión online mediante código de verificación.");}function logout(){location.reload();}
+function showView(id,btn){document.querySelectorAll("main section").forEach(x=>x.classList.add("hidden"));document.getElementById(id).classList.remove("hidden");document.querySelectorAll("nav button").forEach(x=>x.classList.remove("nav-on"));btn.classList.add("nav-on");if(id==="myOrdersView")renderMyOrders();if(id==="workOrdersView")renderWorkOrders();if(id==="adminView")renderAdmin();if(id==="manualOrderView"){renderManualMenu();renderManualCart();}if(id==="paymentsView")renderPayments();}
+
+function renderMenu(){menuList.innerHTML=products.map((p,i)=>`<div class="product ${p.available?"":"off"}"><b>${p.name}</b><div class="price">${money(p.price)}</div>${p.available?`<button class="primary full" onclick="addToCart(${i})">Agregar</button>`:`<button class="secondary full" disabled>AGOTADO</button>`}</div>`).join("");}
+function addToCart(i){if(!products[i].available)return;cartItems.push({name:products[i].name,price:products[i].price,without:[],extras:[]});renderCart();}
+function toggleItem(arr,i,key,val){const a=arr[i][key],j=a.indexOf(val);if(j>=0)a.splice(j,1);else a.push(val);}
+function renderCart(){if(!cartItems.length){cartList.innerHTML='<p class="muted">Tu carrito está vacío.</p>';cartSummary.innerHTML="";return;}cartList.innerHTML=cartItems.map((x,i)=>itemEditor(x,i,"client")).join("");const p=calculateCart(cartItems,orderType.value,document.getElementById("paymentMethod")?.value||"Pago móvil (Bs)");cartSummary.innerHTML=paymentSummary(p,"client");}
+function itemEditor(x,i,mode){const arr=mode==="client"?"cartItems":"manualCartItems";const rer=mode==="client"?"renderCart()":"renderManualCart()";return `<div class="product"><div class="ticket-head"><b>${x.name}</b><button class="secondary" onclick="${arr}.splice(${i},1);${rer}">Quitar</button></div><label>Sin ingredientes</label><div class="checks">${INGREDIENTS.map(a=>`<label><input type="checkbox" ${x.without.includes(a)?"checked":""} onchange="toggleItem(${arr},${i},'without','${a}');${rer}">${a}</label>`).join("")}</div><label>Extras — ${money(configuration.extra)} c/u</label><div class="checks">${INGREDIENTS.map(a=>`<label><input type="checkbox" ${x.extras.includes(a)?"checked":""} onchange="toggleItem(${arr},${i},'extras','${a}');${rer}">${a}</label>`).join("")}</div></div>`;}
+function calculateCart(items,type,method){const subtotal=items.reduce((s,x)=>s+x.price+x.extras.length*configuration.extra,0),delivery=type==="Delivery"?configuration.delivery:0,base=subtotal+delivery;let percent=0;if(method.startsWith("Zelle"))percent=configuration.fees.Zelle;if(method.startsWith("Nequi"))percent=configuration.fees.Nequi;if(method.startsWith("Bancolombia"))percent=configuration.fees.Bancolombia;const fee=base*percent/100,total=base+fee;return{subtotal,delivery,base,method,percent,fee,total};}
+function accountText(method){if(method==="Pago móvil (Bs)")return paymentAccounts.pmBank||paymentAccounts.pmPhone||paymentAccounts.pmId?`Banco: ${paymentAccounts.pmBank||"-"}<br>Teléfono: ${paymentAccounts.pmPhone||"-"}<br>Cédula/RIF: ${paymentAccounts.pmId||"-"}<br>Titular: ${paymentAccounts.holder||"-"}`:"Aún no se han configurado los datos de Pago Móvil.";if(method.startsWith("Zelle"))return paymentAccounts.zelle?`Zelle: ${paymentAccounts.zelle}<br>Titular: ${paymentAccounts.holder||"-"}`:"Zelle aún no configurado.";if(method.startsWith("Nequi"))return paymentAccounts.nequi?`Nequi: ${paymentAccounts.nequi}<br>Titular: ${paymentAccounts.holder||"-"}`:"Nequi aún no configurado.";if(method.startsWith("Bancolombia"))return paymentAccounts.bancolombia?`Bancolombia: ${paymentAccounts.bancolombia}<br>Titular: ${paymentAccounts.holder||"-"}`:"Bancolombia aún no configurado.";return "Pago en efectivo al entregar/retirar.";}
+function paymentSummary(p,mode){let totalText=p.method==="Pago móvil (Bs)"?`${bs(p.total/configuration.bsRate)} <span class="muted">(1 Bs = ${configuration.bsRate.toFixed(2)} COP)</span>`:p.method.includes("USD")?`${usd(p.total/configuration.usdRate)}`:money(p.total);const selId=mode==="client"?"paymentMethod":"manualPaymentMethod",rer=mode==="client"?"renderCart()":"renderManualCart()";return `<div class="total">Subtotal: ${money(p.subtotal)}</div><div>Delivery: ${money(p.delivery)}</div>${p.fee?`<div>Recargo ${p.percent}%: ${money(p.fee)}</div>`:""}<div class="total">Total: ${money(p.total)}</div><label>Método de pago<select id="${selId}" onchange="${rer}"><option ${p.method==="Pago móvil (Bs)"?"selected":""}>Pago móvil (Bs)</option><option ${p.method==="Zelle (USD)"?"selected":""}>Zelle (USD)</option><option ${p.method==="Nequi (COP)"?"selected":""}>Nequi (COP)</option><option ${p.method==="Bancolombia (COP)"?"selected":""}>Bancolombia (COP)</option><option ${p.method==="Efectivo (USD)"?"selected":""}>Efectivo (USD)</option><option ${p.method==="Efectivo (COP)"?"selected":""}>Efectivo (COP)</option></select></label><div class="rate"><b>A pagar:</b> ${totalText}</div><div class="payment-data"><b>Datos para pagar</b><br>${accountText(p.method)}</div>`;}
+function captureGPS(){if(!navigator.geolocation){gpsMessage.textContent="Este navegador no permite ubicación.";return;}gpsMessage.textContent="Obteniendo ubicación…";navigator.geolocation.getCurrentPosition(p=>{currentCoords={lat:p.coords.latitude,lng:p.coords.longitude};gpsMessage.textContent=`Ubicación guardada: ${currentCoords.lat.toFixed(5)}, ${currentCoords.lng.toFixed(5)}`;gpsLink.href=`https://www.google.com/maps/dir/?api=1&destination=${currentCoords.lat},${currentCoords.lng}`;gpsLink.classList.remove("hidden");},()=>gpsMessage.textContent="No se pudo obtener la ubicación. Revisa permisos.");}
+function submitOrder(){if(!cartItems.length)return alert("Agrega al menos un producto.");const p=calculateCart(cartItems,orderType.value,paymentMethod.value),d=new Date(),o=buildOrder({customer:currentUser.name,phone:currentUser.phone,userId:currentUser.id,origin:"App cliente",type:orderType.value,address:deliveryAddress.value.trim(),reference:deliveryReference.value.trim(),coords:currentCoords,payment:p.method,items:cartItems,calc:p,status:"Pendiente",acceptedAt:null});orders.unshift(o);persist();alert("Pedido enviado. Queda pendiente de aceptación por Pedreburguer.");cartItems=[];currentCoords=null;deliveryAddress.value="";deliveryReference.value="";gpsMessage.textContent="Puedes enviar tu ubicación para facilitar el delivery.";gpsLink.classList.add("hidden");renderCart();renderMyOrders();}
+function buildOrder(x){const d=new Date();return{id:orders.length?Math.max(...orders.map(o=>o.id))+1:1,date:d.toLocaleDateString("es-VE"),time:d.toLocaleTimeString("es-VE",{hour:"2-digit",minute:"2-digit"}),userId:x.userId||null,customer:x.customer||"Cliente",phone:x.phone||"",origin:x.origin||"Manual",type:x.type,address:x.address,reference:x.reference,coords:x.coords,payment:x.payment,items:JSON.parse(JSON.stringify(x.items)),subtotal:x.calc.subtotal,delivery:x.calc.delivery,fee:x.calc.fee,total:x.calc.total,bsRate:configuration.bsRate,usdRate:configuration.usdRate,status:x.status||"Pendiente",acceptedAt:x.acceptedAt||null,paymentStatus:"Pendiente",paymentReference:"",paymentSender:""};}
+
+function statusTrack(status){const steps=["Pendiente","Aceptado","Preparando","Listo"];let idx=steps.indexOf(status);if(status==="Entregado")idx=4;return `<div class="status-track">${steps.map((s,i)=>`<div class="track-step ${i<idx?"done":i===idx?"now":""}">${s}</div>`).join("")}</div>`;}
+function renderMyOrders(){
+ const mine=orders.filter(x=>x.userId===currentUser?.id);
+ myOrdersList.innerHTML=mine.length?mine.map(o=>`
+ <div class="ticket">
+   <div class="ticket-head"><div><div class="ticket-id">#${String(o.id).padStart(3,"0")}</div><div class="muted">${o.date} · ${o.time}</div></div><span class="status ${o.status}">${o.status}</span></div>
+   ${!["Rechazado","Cancelado"].includes(o.status)?statusTrack(o.status):""}
+   <div class="ticket-products">${productsHtml(o.items)}</div>
+   <div><b>Pago:</b> ${o.payment}</div>
+   <div style="margin-top:6px"><span class="paybadge pay-${o.paymentStatus||"Pendiente"}">${o.paymentStatus||"Pendiente"}</span></div>
+   <div class="ticket-total">${money(o.total)}${o.payment==="Pago móvil (Bs)"?`<br>${bs(o.total/o.bsRate)}`:""}</div>
+   ${o.paymentStatus==="Pendiente" && !["Cancelado","Rechazado"].includes(o.status)?`<button class="secondary full" style="margin-top:9px" onclick="reportPayment(${o.id})">Ya pagué / Reportar pago</button><p class="muted">Solo pediremos referencia y, si aplica, nombre del remitente. La captura no será obligatoria.</p>`:""}
+   ${o.paymentStatus==="Reportado"?`<div class="payment-data"><b>Pago reportado.</b><br>Referencia: ${o.paymentReference||"-"}${o.paymentSender?`<br>Envía: ${o.paymentSender}`:""}<br>Esperando verificación.</div>`:""}
+   ${o.paymentStatus==="Verificado"?`<div class="payment-data"><b>✓ Pago verificado</b></div>`:""}
+   ${o.status==="Pendiente"?`<button class="dangerbtn full" style="margin-top:8px" onclick="cancelPending(${o.id})">Cancelar pedido</button>`:""}
+ </div>`).join(""):'<p class="muted">Todavía no tienes pedidos.</p>';
+}
+function reportPayment(id){
+ const o=orders.find(x=>x.id===id);if(!o)return;
+ let ref=prompt("Referencia o número de operación (si aplica):",o.paymentReference||"");if(ref===null)return;
+ let sender="";
+ if(o.payment.startsWith("Zelle"))sender=prompt("Nombre de quien envió el Zelle:",o.paymentSender||"")||"";
+ else if(o.payment.startsWith("Pago móvil"))sender=prompt("Nombre o teléfono desde donde hicieron el Pago Móvil (opcional):",o.paymentSender||"")||"";
+ else if(o.payment.startsWith("Nequi")||o.payment.startsWith("Bancolombia"))sender=prompt("Nombre de quien hizo la transferencia (opcional):",o.paymentSender||"")||"";
+ o.paymentReference=(ref||"").trim();o.paymentSender=sender.trim();o.paymentStatus="Reportado";persist();renderMyOrders();alert("Pago reportado. Pedreburguer lo verificará.");
+}
+function cancelPending(id){const o=orders.find(x=>x.id===id);if(!o||o.status!=="Pendiente")return alert("Este pedido ya no puede cancelarse desde la app.");if(confirm("¿Cancelar este pedido?")){o.status="Cancelado";persist();renderMyOrders();}}
+
+function productsHtml(items){return items.map(x=>`<div class="ticket-product"><b>1× ${x.name}</b>${x.without.length?`<div class="mods sin"><b>SIN:</b> ${x.without.join(", ")}</div>`:""}${x.extras.length?`<div class="mods extra"><b>EXTRA:</b> ${x.extras.join(", ")}</div>`:""}</div>`).join("");}
+function renderWorkOrders(){if(currentUser?.role!=="admin")return;pendingCounter.textContent=orders.filter(x=>x.status==="Pendiente").length+" pendientes";workOrdersList.innerHTML=orders.length?orders.map(o=>`<div class="ticket"><div class="ticket-head"><div><div class="ticket-id">#${String(o.id).padStart(3,"0")}</div><b>${o.customer}</b><div class="muted">${o.date} · ${o.time} · ${o.phone} · ${o.origin}</div></div><span class="status ${o.status}">${o.status}</span></div><div class="chips"><span class="chip">${o.type}</span><span class="chip">${o.payment}</span></div>${o.address?`<div>📍 ${o.address}</div>`:""}${o.reference?`<div class="muted">Ref: ${o.reference}</div>`:""}${o.coords?`<div class="map-actions"><a target="_blank" href="https://www.google.com/maps/dir/?api=1&destination=${o.coords.lat},${o.coords.lng}"><button class="dark" type="button">🗺️ Cómo llegar</button></a><a target="_blank" href="https://www.google.com/maps?q=${o.coords.lat},${o.coords.lng}"><button class="secondary" type="button">Ver punto</button></a></div>`:""}<div class="ticket-products">${productsHtml(o.items)}</div><div class="payment-data"><b>Pago:</b> ${o.payment}<br><span class="paybadge pay-${o.paymentStatus||"Pendiente"}">${o.paymentStatus||"Pendiente"}</span>${o.paymentReference?`<br>Ref: ${o.paymentReference}`:""}${o.paymentSender?`<br>Envía: ${o.paymentSender}`:""}</div><div class="ticket-total">${money(o.total)}${o.payment==="Pago móvil (Bs)"?`<br><span style="color:#17833b">${bs(o.total/o.bsRate)}</span>`:""}</div><div class="admin-actions">${o.status==="Pendiente"?`<button class="primary" onclick="acceptOrder(${o.id})">✓ Aceptar pedido</button><button class="dangerbtn" onclick="rejectOrder(${o.id})">✕ Rechazar</button>`:""}${!["Pendiente","Rechazado","Cancelado","Entregado"].includes(o.status)?`<select onchange="changeOrderStatus(${o.id},this.value)">${["Aceptado","Preparando","Listo","Entregado"].map(s=>`<option ${s===o.status?"selected":""}>${s}</option>`).join("")}</select>`:""}<button class="dark" onclick="printTicket(${o.id})">🖨️ Ticket</button></div></div>`).join(""):'<p class="muted">Todavía no hay pedidos.</p>';}
+function acceptOrder(id){const o=orders.find(x=>x.id===id);if(o&&o.status==="Pendiente"){o.status="Aceptado";o.acceptedAt=new Date().toISOString();persist();renderWorkOrders();}}
+function rejectOrder(id){const o=orders.find(x=>x.id===id);if(o&&o.status==="Pendiente"){o.status="Rechazado";persist();renderWorkOrders();}}
+function changeOrderStatus(id,status){const o=orders.find(x=>x.id===id);if(o)o.status=status;persist();renderWorkOrders();}
+
+
+function renderPayments(){
+ if(currentUser?.role!=="admin")return;
+ const reported=orders.filter(o=>o.paymentStatus==="Reportado");
+ reportedPaymentsCounter.textContent=reported.length+" reportados";
+ paymentsList.innerHTML=reported.length?reported.map(o=>`
+ <div class="ticket">
+   <div class="ticket-head"><div><div class="ticket-id">#${String(o.id).padStart(3,"0")}</div><b>${o.customer}</b><div class="muted">${o.date} · ${o.time} · ${o.phone}</div></div><span class="paybadge pay-Reportado">Reportado</span></div>
+   <div class="chips"><span class="chip">${o.payment}</span><span class="chip">${o.origin}</span></div>
+   <div class="payment-data"><b>Referencia:</b> ${o.paymentReference||"Sin referencia"}${o.paymentSender?`<br><b>Envía:</b> ${o.paymentSender}`:""}<br><b>Monto:</b> ${money(o.total)}${o.payment==="Pago móvil (Bs)"?` · ${bs(o.total/o.bsRate)}`:""}</div>
+   <div class="admin-actions"><button class="primary" onclick="verifyPayment(${o.id})">✓ Marcar verificado</button><button class="secondary" onclick="markPaymentPending(${o.id})">Devolver a pendiente</button><button class="dark" onclick="printTicket(${o.id})">🖨️ Ticket</button></div>
+ </div>`).join(""):'<p class="muted">No hay pagos reportados pendientes de verificar.</p>';
+}
+function verifyPayment(id){const o=orders.find(x=>x.id===id);if(o){o.paymentStatus="Verificado";persist();renderPayments();renderWorkOrders();}}
+function markPaymentPending(id){const o=orders.find(x=>x.id===id);if(o){o.paymentStatus="Pendiente";persist();renderPayments();renderWorkOrders();}}
+
+function renderManualMenu(){manualMenu.innerHTML=products.map((p,i)=>`<div class="product ${p.available?"":"off"}"><b>${p.name}</b><div class="price">${money(p.price)}</div>${p.available?`<button class="primary full" onclick="addManual(${i})">Agregar</button>`:`<button class="secondary full" disabled>AGOTADO</button>`}</div>`).join("");}
+function addManual(i){manualCartItems.push({name:products[i].name,price:products[i].price,without:[],extras:[]});renderManualCart();}
+function renderManualCart(){if(!manualCartItems.length){manualCart.innerHTML='<p class="muted">Sin productos.</p>';manualSummary.innerHTML="";return;}manualCart.innerHTML=manualCartItems.map((x,i)=>itemEditor(x,i,"manual")).join("");const p=calculateCart(manualCartItems,manualType.value,document.getElementById("manualPaymentMethod")?.value||"Pago móvil (Bs)");manualSummary.innerHTML=paymentSummary(p,"manual");}
+function submitManualOrder(){if(!manualCartItems.length)return alert("Agrega al menos un producto.");const method=manualPaymentMethod.value,p=calculateCart(manualCartItems,manualType.value,method);let coords=null;if(manualLat.value&&manualLng.value)coords={lat:Number(manualLat.value),lng:Number(manualLng.value)};const o=buildOrder({customer:manualName.value.trim()||"Cliente",phone:manualPhone.value.trim(),origin:manualOrigin.value,type:manualType.value,address:manualAddress.value.trim(),reference:manualReference.value.trim(),coords,payment:p.method,items:manualCartItems,calc:p,status:"Aceptado",acceptedAt:new Date().toISOString()});orders.unshift(o);persist();alert("Ticket #"+String(o.id).padStart(3,"0")+" creado.");manualCartItems=[];manualName.value="";manualPhone.value="";manualAddress.value="";manualReference.value="";manualLat.value="";manualLng.value="";renderManualCart();renderWorkOrders();}
+
+function printTicket(id){const o=orders.find(x=>x.id===id);if(!o)return;const pt=o.items.map((x,i)=>`${String.fromCharCode(65+i)}) 1x ${x.name}\n${x.without.length?"   SIN: "+x.without.join(", ")+"\n":""}${x.extras.length?"   EXTRA: "+x.extras.join(", ")+"\n":""}`).join("\n");const acc=`Estado del pago: ${o.paymentStatus||"Pendiente"}${o.paymentReference?"\nReferencia: "+o.paymentReference:""}${o.paymentSender?"\nEnvía: "+o.paymentSender:""}`;const map=o.coords?`\nUbicación: https://www.google.com/maps?q=${o.coords.lat},${o.coords.lng}`:"";const bsLine=o.payment==="Pago móvil (Bs)"?`\nTOTAL Bs: ${bs(o.total/o.bsRate)}\nTasa: 1 Bs = ${o.bsRate.toFixed(2)} COP`:"";const w=window.open("","_blank","width=430,height=760");w.document.write(`<pre style="font:14px monospace;white-space:pre-wrap">PEDREBURGUER
+#${String(o.id).padStart(3,"0")} — ${o.type.toUpperCase()}
+Fecha: ${o.date}
+Hora: ${o.time}
+
+Cliente: ${o.customer}
+Tel: ${o.phone}
+Origen: ${o.origin}
+${o.address?"Dirección: "+o.address+"\n":""}${o.reference?"Ref: "+o.reference+"\n":""}${map}
+
+------------------------------
+${pt}
+------------------------------
+Subtotal: ${money(o.subtotal)}
+Delivery: ${money(o.delivery)}
+Recargo: ${money(o.fee)}
+TOTAL: ${money(o.total)}${bsLine}
+
+Pago: ${o.payment}
+${acc}
+Estado del pedido: ${o.status}
+
+¡Gracias!
+</pre><script>window.print()<\/script>`);w.document.close();}
+
+function renderAdmin(){if(currentUser?.role!=="admin")return;bsRateInput.value=configuration.bsRate;usdRateInput.value=configuration.usdRate;deliveryFeeInput.value=configuration.delivery;extraFeeInput.value=configuration.extra;zelleFeeInput.value=configuration.fees.Zelle;nequiFeeInput.value=configuration.fees.Nequi;bancoFeeInput.value=configuration.fees.Bancolombia;pmBank.value=paymentAccounts.pmBank;pmPhone.value=paymentAccounts.pmPhone;pmId.value=paymentAccounts.pmId;zelleAccount.value=paymentAccounts.zelle;nequiAccount.value=paymentAccounts.nequi;bancoAccount.value=paymentAccounts.bancolombia;accountHolder.value=paymentAccounts.holder;adminProducts.innerHTML=products.map((p,i)=>`<div class="admin-row"><div class="row"><input id="prodName${i}" value="${p.name}"><input id="prodPrice${i}" type="number" value="${p.price}"></div><div class="admin-actions"><button class="secondary" onclick="saveProduct(${i})">Guardar</button><button class="secondary" onclick="toggleProduct(${i})">${p.available?"Marcar agotado":"Reactivar"}</button></div></div>`).join("");}
+function saveConfiguration(){configuration={bsRate:Number(bsRateInput.value)||3.5,usdRate:Number(usdRateInput.value)||1,delivery:Number(deliveryFeeInput.value)||0,extra:Number(extraFeeInput.value)||0,fees:{Zelle:Number(zelleFeeInput.value)||0,Nequi:Number(nequiFeeInput.value)||0,Bancolombia:Number(bancoFeeInput.value)||0}};persist();configMessage.className="ok";configMessage.textContent="Configuración guardada.";}
+function savePaymentAccounts(){paymentAccounts={pmBank:pmBank.value.trim(),pmPhone:pmPhone.value.trim(),pmId:pmId.value.trim(),zelle:zelleAccount.value.trim(),nequi:nequiAccount.value.trim(),bancolombia:bancoAccount.value.trim(),holder:accountHolder.value.trim()};persist();accountsMessage.className="ok";accountsMessage.textContent="Cuentas guardadas.";}
+function changeAdminPassword(){adminPassMessage.className="danger";const admin=users.find(x=>x.role==="admin");if(!admin||admin.password!==adminCurrentPass.value)return adminPassMessage.textContent="La clave actual no es correcta.";if(adminNewPass.value.length<6)return adminPassMessage.textContent="La nueva clave debe tener mínimo 6 caracteres.";if(adminNewPass.value!==adminNewPass2.value)return adminPassMessage.textContent="Las nuevas claves no coinciden.";admin.password=adminNewPass.value;persist();adminCurrentPass.value=adminNewPass.value=adminNewPass2.value="";adminPassMessage.className="ok";adminPassMessage.textContent="Clave de administrador cambiada.";}
+function saveProduct(i){products[i].name=document.getElementById("prodName"+i).value.trim()||products[i].name;products[i].price=Number(document.getElementById("prodPrice"+i).value)||products[i].price;persist();renderAdmin();renderMenu();renderManualMenu();}
+function toggleProduct(i){products[i].available=!products[i].available;persist();renderAdmin();renderMenu();renderManualMenu();}
+function addProduct(){const n=newProductName.value.trim(),p=Number(newProductPrice.value);if(!n||!p)return alert("Coloca nombre y precio.");products.push({name:n,price:p,available:true});persist();newProductName.value="";newProductPrice.value="";renderAdmin();renderMenu();renderManualMenu();}
+
+
+// ===== PEDREBURGUER V6 ONLINE / SUPABASE =====
+const PB_API="https://ojoirllxbyzhhmcfyxwy.supabase.co/functions/v1/pedreburguer-api";
+const PB_KEY="sb_publishable_WgMM-JNcOqsTFHq0nO4Deg_qkYpI62q";
+let pbAccessToken=sessionStorage.getItem("pb_access")||"";
+let pbAdminPassword=sessionStorage.getItem("pb_admin")||"";
+async function api(action,data={}){const r=await fetch(PB_API,{method:"POST",headers:{"Content-Type":"application/json","apikey":PB_KEY},body:JSON.stringify({action,...data})});let j={};try{j=await r.json()}catch{}if(!r.ok)throw new Error(j.error||"No se pudo conectar con Pedreburguer.");return j;}
+async function onlineBootstrap(){try{const j=await api("bootstrap");products=j.products;configuration=j.configuration;paymentAccounts=j.paymentAccounts;renderMenu();renderCart();}catch(e){console.error(e);loginMessage.textContent="Sin conexión con el servidor. Revisa internet e intenta de nuevo.";}}
+function addToCart(i){if(!products[i].available)return;cartItems.push({productId:products[i].id,name:products[i].name,price:products[i].price,without:[],extras:[]});renderCart();}
+function addManual(i){if(!products[i].available)return;manualCartItems.push({productId:products[i].id,name:products[i].name,price:products[i].price,without:[],extras:[]});renderManualCart();}
+async function createAccount(){const n=registerName.value.trim(),p=registerPhone.value.trim(),a=registerPassword.value,b=registerPassword2.value;registerMessage.className="danger";if(!n||!p||!a||!b)return registerMessage.textContent="Completa todos los campos.";if(a.length<6)return registerMessage.textContent="La contraseña debe tener mínimo 6 caracteres.";if(a!==b)return registerMessage.textContent="Las contraseñas no coinciden.";registerMessage.textContent="Creando cuenta…";try{const j=await api("register",{name:n,phone:p,password:a});pbAccessToken=j.session.access_token;sessionStorage.setItem("pb_access",pbAccessToken);currentUser=j.user;registerMessage.className="ok";registerMessage.textContent="Cuenta creada correctamente.";loginPhone.value=p;setTimeout(openLogin,600);}catch(e){registerMessage.textContent=e.message;}}
+async function doLogin(){const p=loginPhone.value.trim(),a=loginPassword.value;loginMessage.textContent="Conectando…";try{if(p.toLowerCase()==="admin"){const j=await api("admin_login",{password:a});if(!j.ok)throw new Error("Clave de administrador incorrecta.");pbAdminPassword=a;sessionStorage.setItem("pb_admin",a);currentUser={id:"admin",name:"Administrador Pedreburguer",phone:"admin",role:"admin"};}else{const j=await api("login",{phone:p,password:a});pbAccessToken=j.session.access_token;sessionStorage.setItem("pb_access",pbAccessToken);currentUser=j.user;}loginMessage.textContent="";authView.classList.add("hidden");appView.classList.remove("hidden");helloName.textContent=currentUser.name;if(currentUser.role==="admin"){document.querySelectorAll(".nav-client").forEach(x=>x.classList.add("hidden"));document.querySelectorAll(".nav-admin").forEach(x=>x.classList.remove("hidden"));document.querySelectorAll("main section").forEach(x=>x.classList.add("hidden"));workOrdersView.classList.remove("hidden");document.querySelectorAll("nav button").forEach(x=>x.classList.remove("nav-on"));navWorkOrders.classList.add("nav-on");await renderWorkOrders();renderPayments();renderAdmin();renderManualMenu();renderManualCart();}else{document.querySelectorAll(".nav-admin").forEach(x=>x.classList.add("hidden"));renderMenu();renderCart();await renderMyOrders();}}catch(e){currentUser=null;loginMessage.textContent=e.message;}}
+function logout(){sessionStorage.removeItem("pb_access");sessionStorage.removeItem("pb_admin");location.reload();}
+async function submitOrder(){if(!cartItems.length)return alert("Agrega al menos un producto.");const p=calculateCart(cartItems,orderType.value,paymentMethod.value);const payload={origin:"App cliente",type:orderType.value,address:deliveryAddress.value.trim(),reference:deliveryReference.value.trim(),coords:currentCoords,payment:p.method,items:cartItems,subtotal:p.subtotal,delivery:p.delivery,fee:p.fee,total:p.total,bsRate:configuration.bsRate,usdRate:configuration.usdRate,extraFee:configuration.extra,status:"Pendiente"};try{const j=await api("create_order",{accessToken:pbAccessToken,order:payload});orders.unshift(j.order);alert("Pedido #"+String(j.order.id).padStart(3,"0")+" enviado a Pedreburguer.");cartItems=[];currentCoords=null;deliveryAddress.value="";deliveryReference.value="";gpsMessage.textContent="Puedes enviar tu ubicación para facilitar el delivery.";gpsLink.classList.add("hidden");renderCart();await renderMyOrders();}catch(e){alert(e.message);}}
+async function renderMyOrders(){if(currentUser?.role!=="customer")return;try{const j=await api("my_orders",{accessToken:pbAccessToken});orders=j.orders;}catch(e){myOrdersList.innerHTML=`<p class="danger">${e.message}</p>`;return;}const mine=orders;myOrdersList.innerHTML=mine.length?mine.map(o=>`<div class="ticket"><div class="ticket-head"><div><div class="ticket-id">#${String(o.id).padStart(3,"0")}</div><div class="muted">${o.date} · ${o.time}</div></div><span class="status ${o.status}">${o.status}</span></div>${productsHtml(o.items)}<div class="payment-data"><b>Pago:</b> ${o.payment}<br><span class="paybadge pay-${o.paymentStatus||"Pendiente"}">${o.paymentStatus||"Pendiente"}</span>${o.paymentReference?`<br>Ref: ${o.paymentReference}`:""}${o.paymentSender?`<br>Envía: ${o.paymentSender}`:""}</div><div class="ticket-total">${money(o.total)}${o.payment==="Pago móvil (Bs)"?`<br><span style="color:#17833b">${bs(o.total/o.bsRate)}</span>`:""}</div>${!["Cancelado","Rechazado"].includes(o.status)&&o.paymentStatus!=="Verificado"?`<button class="secondary full" style="margin-top:9px" onclick="reportPayment(${o.id})">Ya pagué / Reportar pago</button>`:""}${o.status==="Pendiente"?`<button class="dangerbtn full" style="margin-top:8px" onclick="cancelPending(${o.id})">Cancelar pedido</button>`:""}</div>`).join(""):'<p class="muted">Todavía no tienes pedidos.</p>';}
+async function reportPayment(id){const o=orders.find(x=>x.id===id);if(!o)return;let ref=prompt("Referencia o número de operación (si aplica):",o.paymentReference||"");if(ref===null)return;let sender="";if(o.payment.startsWith("Zelle"))sender=prompt("Nombre de quien envió el Zelle:",o.paymentSender||"")||"";else if(o.payment.startsWith("Pago móvil"))sender=prompt("Nombre o teléfono desde donde hicieron el Pago Móvil (opcional):",o.paymentSender||"")||"";else if(o.payment.startsWith("Nequi")||o.payment.startsWith("Bancolombia"))sender=prompt("Nombre de quien hizo la transferencia (opcional):",o.paymentSender||"")||"";try{await api("report_payment",{accessToken:pbAccessToken,id,reference:(ref||"").trim(),sender:sender.trim()});await renderMyOrders();alert("Pago reportado. Pedreburguer lo verificará.");}catch(e){alert(e.message);}}
+async function cancelPending(id){if(!confirm("¿Cancelar este pedido?"))return;try{await api("cancel_order",{accessToken:pbAccessToken,id});await renderMyOrders();}catch(e){alert(e.message);}}
+async function renderWorkOrders(){if(currentUser?.role!=="admin")return;try{const j=await api("admin_orders",{adminPassword:pbAdminPassword});orders=j.orders;}catch(e){workOrdersList.innerHTML=`<p class="danger">${e.message}</p>`;return;}pendingCounter.textContent=orders.filter(x=>x.status==="Pendiente").length+" pendientes";workOrdersList.innerHTML=orders.length?orders.map(o=>`<div class="ticket"><div class="ticket-head"><div><div class="ticket-id">#${String(o.id).padStart(3,"0")}</div><b>${o.customer}</b><div class="muted">${o.date} · ${o.time} · ${o.phone} · ${o.origin}</div></div><span class="status ${o.status}">${o.status}</span></div><div class="chips"><span class="chip">${o.type}</span><span class="chip">${o.payment}</span></div>${o.address?`<div>📍 ${o.address}</div>`:""}${o.reference?`<div class="muted">Ref: ${o.reference}</div>`:""}${o.coords?`<div class="map-actions"><a target="_blank" href="https://www.google.com/maps/dir/?api=1&destination=${o.coords.lat},${o.coords.lng}"><button class="dark" type="button">🗺️ Cómo llegar</button></a></div>`:""}<div class="ticket-products">${productsHtml(o.items)}</div><div class="payment-data"><b>Pago:</b> ${o.payment}<br><span class="paybadge pay-${o.paymentStatus||"Pendiente"}">${o.paymentStatus||"Pendiente"}</span>${o.paymentReference?`<br>Ref: ${o.paymentReference}`:""}${o.paymentSender?`<br>Envía: ${o.paymentSender}`:""}</div><div class="ticket-total">${money(o.total)}${o.payment==="Pago móvil (Bs)"?`<br><span style="color:#17833b">${bs(o.total/o.bsRate)}</span>`:""}</div><div class="admin-actions">${o.status==="Pendiente"?`<button class="primary" onclick="acceptOrder(${o.id})">✓ Aceptar pedido</button><button class="dangerbtn" onclick="rejectOrder(${o.id})">✕ Rechazar</button>`:""}${!["Pendiente","Rechazado","Cancelado","Entregado"].includes(o.status)?`<select onchange="changeOrderStatus(${o.id},this.value)">${["Aceptado","Preparando","Listo","Entregado"].map(s=>`<option ${s===o.status?"selected":""}>${s}</option>`).join("")}</select>`:""}<button class="dark" onclick="printTicket(${o.id})">🖨️ Ticket</button></div></div>`).join(""):'<p class="muted">Todavía no hay pedidos.</p>';renderPayments();}
+async function updateOnlineOrder(id,patch){try{await api("update_order",{adminPassword:pbAdminPassword,id,...patch});await renderWorkOrders();}catch(e){alert(e.message);}}
+function acceptOrder(id){updateOnlineOrder(id,{status:"Aceptado"});}function rejectOrder(id){updateOnlineOrder(id,{status:"Rechazado"});}function changeOrderStatus(id,status){updateOnlineOrder(id,{status});}
+function verifyPayment(id){updateOnlineOrder(id,{paymentStatus:"Verificado"});}function markPaymentPending(id){updateOnlineOrder(id,{paymentStatus:"Pendiente"});}
+async function submitManualOrder(){if(!manualCartItems.length)return alert("Agrega al menos un producto.");const p=calculateCart(manualCartItems,manualType.value,manualPaymentMethod.value);let coords=null;if(manualLat.value&&manualLng.value)coords={lat:Number(manualLat.value),lng:Number(manualLng.value)};const payload={customer:manualName.value.trim()||"Cliente",phone:manualPhone.value.trim(),origin:manualOrigin.value,type:manualType.value,address:manualAddress.value.trim(),reference:manualReference.value.trim(),coords,payment:p.method,items:manualCartItems,subtotal:p.subtotal,delivery:p.delivery,fee:p.fee,total:p.total,bsRate:configuration.bsRate,usdRate:configuration.usdRate,extraFee:configuration.extra,status:"Aceptado",acceptedAt:new Date().toISOString()};try{const j=await api("admin_create_order",{adminPassword:pbAdminPassword,order:payload});alert("Ticket #"+String(j.order.id).padStart(3,"0")+" creado.");manualCartItems=[];manualName.value="";manualPhone.value="";manualAddress.value="";manualReference.value="";manualLat.value="";manualLng.value="";renderManualCart();await renderWorkOrders();}catch(e){alert(e.message);}}
+async function saveConfiguration(){configuration={bsRate:Number(bsRateInput.value)||3.5,usdRate:Number(usdRateInput.value)||1,delivery:Number(deliveryFeeInput.value)||0,extra:Number(extraFeeInput.value)||0,fees:{Zelle:Number(zelleFeeInput.value)||0,Nequi:Number(nequiFeeInput.value)||0,Bancolombia:Number(bancoFeeInput.value)||0}};try{await api("save_settings",{adminPassword:pbAdminPassword,configuration,paymentAccounts});configMessage.className="ok";configMessage.textContent="Configuración guardada en internet.";}catch(e){configMessage.className="danger";configMessage.textContent=e.message;}}
+async function savePaymentAccounts(){paymentAccounts={pmBank:pmBank.value.trim(),pmPhone:pmPhone.value.trim(),pmId:pmId.value.trim(),zelle:zelleAccount.value.trim(),nequi:nequiAccount.value.trim(),bancolombia:bancoAccount.value.trim(),holder:accountHolder.value.trim()};try{await api("save_settings",{adminPassword:pbAdminPassword,configuration,paymentAccounts});accountsMessage.className="ok";accountsMessage.textContent="Cuentas guardadas en internet.";}catch(e){accountsMessage.className="danger";accountsMessage.textContent=e.message;}}
+async function saveProduct(i){const p={...products[i],name:document.getElementById("prodName"+i).value.trim()||products[i].name,price:Number(document.getElementById("prodPrice"+i).value)||products[i].price};try{await api("save_product",{adminPassword:pbAdminPassword,product:p});products[i]=p;renderAdmin();renderMenu();renderManualMenu();}catch(e){alert(e.message);}}
+async function toggleProduct(i){const p={...products[i],available:!products[i].available};try{await api("save_product",{adminPassword:pbAdminPassword,product:p});products[i]=p;renderAdmin();renderMenu();renderManualMenu();}catch(e){alert(e.message);}}
+async function addProduct(){const n=newProductName.value.trim(),p=Number(newProductPrice.value);if(!n||!p)return alert("Coloca nombre y precio.");try{const j=await api("add_product",{adminPassword:pbAdminPassword,product:{name:n,price:p}});products.push(j.product);newProductName.value="";newProductPrice.value="";renderAdmin();renderMenu();renderManualMenu();}catch(e){alert(e.message);}}
+async function changeAdminPassword(){adminPassMessage.className="danger";if(adminCurrentPass.value!==pbAdminPassword)return adminPassMessage.textContent="La clave actual no es correcta.";if(adminNewPass.value.length<6)return adminPassMessage.textContent="La nueva clave debe tener mínimo 6 caracteres.";if(adminNewPass.value!==adminNewPass2.value)return adminPassMessage.textContent="Las nuevas claves no coinciden.";try{await api("change_admin_password",{adminPassword:pbAdminPassword,newPassword:adminNewPass.value});pbAdminPassword=adminNewPass.value;sessionStorage.setItem("pb_admin",pbAdminPassword);adminCurrentPass.value=adminNewPass.value=adminNewPass2.value="";adminPassMessage.className="ok";adminPassMessage.textContent="Clave cambiada en el servidor.";}catch(e){adminPassMessage.textContent=e.message;}}
+onlineBootstrap();
+</script>
+</body>
+</html>
