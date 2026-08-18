@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Pedreburguer V6 Online</title>
+<title>Pedreburguer V6.1 Online</title>
 <style>
 :root{--red:#d71920;--red2:#a90d13;--black:#0e0e0f;--bg:#f3f3f3;--line:#dedede;--muted:#6b6b6b;--green:#17833b;--amber:#a96d00}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:#171717;font-family:Arial,Helvetica,sans-serif}
@@ -26,9 +26,26 @@ h2,h3{margin-top:0}input,select,textarea{width:100%;padding:11px;border:1px soli
 .status-track{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;margin:10px 0}.track-step{font-size:10px;text-align:center;padding:6px 3px;border-radius:7px;background:#eee}.track-step.done{background:#dff5e6;color:#126a31;font-weight:800}.track-step.now{background:#111;color:#fff;font-weight:800}
 hr{border:0;border-top:1px solid var(--line);margin:15px 0}
 @media(max-width:760px){.grid2{grid-template-columns:1fr}.row{flex-direction:column}.brand-copy{display:none}.brandbar{justify-content:center}.brandmark{width:205px}.checks{grid-template-columns:1fr 1fr}}
+
+    .business-status{max-width:1100px;margin:12px auto 0;padding:0 14px}
+    .business-status-box{padding:12px 14px;border-radius:14px;font-weight:800;text-align:center;border:1px solid #ddd;background:#fff}
+    .business-status-box.open{border-color:#198754}
+    .business-status-box.closed{border-color:#dc3545}
+    .business-status-box.soon{border-color:#d39e00}
+    .business-status-sub{font-size:13px;font-weight:600;margin-top:4px}
+    .business-status-admin{margin-top:14px;padding:14px;border:1px solid #ddd;border-radius:14px;background:#fff}
+
 </style>
 </head>
 <body>
+
+<div id="businessStatusWrap" class="business-status">
+  <div id="businessStatusBox" class="business-status-box open">
+    <div id="businessStatusTitle">🟢 Pedreburguer está abierto</div>
+    <div id="businessStatusSub" class="business-status-sub">Estamos recibiendo pedidos.</div>
+  </div>
+</div>
+
 
 <template id="brandLogo">
 <svg viewBox="0 0 520 230" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Pedreburguer">
@@ -56,6 +73,7 @@ hr{border:0;border-top:1px solid var(--line);margin:15px 0}
     <label>Contraseña<input id="loginPassword" type="password"></label>
     <button class="primary full" style="margin-top:12px" onclick="doLogin()">Iniciar sesión</button>
     <button class="secondary full" style="margin-top:8px" onclick="openRegister()">Crear cuenta</button>
+    <button class="dark full" style="margin-top:8px" onclick="continueAsGuest()">Continuar como invitado</button>
     <button class="secondary full" style="margin-top:8px" onclick="forgotPassword()">¿Olvidaste tu contraseña?</button>
     <p id="loginMessage" class="danger"></p>
   </div>
@@ -80,6 +98,7 @@ hr{border:0;border-top:1px solid var(--line);margin:15px 0}
   <button id="navManualOrder" class="nav-admin hidden" onclick="showView('manualOrderView',this)">➕ Pedido manual</button>
   <button id="navPayments" class="nav-admin hidden" onclick="showView('paymentsView',this)">💰 Pagos</button>
   <button id="navAdmin" class="nav-admin hidden" onclick="showView('adminView',this)">⚙️ Administración</button>
+  <button onclick="enableNotifications()">🔔 Avisos</button>
   <button onclick="logout()">Salir</button>
 </nav>
 
@@ -91,6 +110,7 @@ hr{border:0;border-top:1px solid var(--line);margin:15px 0}
 <div class="card"><h2>🍔 Menú</h2><div id="menuList"></div></div>
 <div class="card">
 <h3>📍 Entrega</h3>
+<div id="guestFields" class="hidden"><div class="rate"><b>Pedido como invitado</b><br><span class="muted">Solo necesitamos estos datos para identificar y entregar tu pedido.</span></div><label>Nombre<input id="guestName" placeholder="Tu nombre"></label><label>Teléfono<input id="guestPhone" placeholder="0414..."></label></div>
 <label>Tipo<select id="orderType" onchange="renderCart()"><option>Delivery</option><option>Retiro</option></select></label>
 <label>Dirección<input id="deliveryAddress" placeholder="Dirección"></label>
 <label>Referencia<textarea id="deliveryReference" rows="2"></textarea></label>
@@ -167,6 +187,23 @@ hr{border:0;border-top:1px solid var(--line);margin:15px 0}
 <button class="primary full" style="margin-top:8px" onclick="addProduct()">Agregar producto</button>
 </div>
 </section>
+
+<div class="business-status-admin">
+  <h3>🏪 Estado del negocio</h3>
+  <p class="muted">Este estado lo verán todos los clientes.</p>
+  <label>Estado</label>
+  <select id="adminBusinessStatus">
+    <option value="open">🟢 Abierto — Recibiendo pedidos</option>
+    <option value="closed">🔴 Cerrado — No recibir pedidos</option>
+    <option value="soon">🟡 Abrimos pronto</option>
+  </select>
+  <label>Mensaje para los clientes (opcional)</label>
+  <input id="adminBusinessMessage" placeholder="Ej: Hoy cerramos por falta de mercancía">
+  <label>Hora / texto de reapertura (opcional)</label>
+  <input id="adminBusinessReopen" placeholder="Ej: Mañana desde las 5:00 pm">
+  <button class="primary" onclick="saveBusinessStatus()">Guardar estado</button>
+</div>
+
 </main>
 </div>
 
@@ -309,7 +346,8 @@ function addManual(i){if(!products[i].available)return;manualCartItems.push({pro
 async function createAccount(){const n=registerName.value.trim(),p=registerPhone.value.trim(),a=registerPassword.value,b=registerPassword2.value;registerMessage.className="danger";if(!n||!p||!a||!b)return registerMessage.textContent="Completa todos los campos.";if(a.length<6)return registerMessage.textContent="La contraseña debe tener mínimo 6 caracteres.";if(a!==b)return registerMessage.textContent="Las contraseñas no coinciden.";registerMessage.textContent="Creando cuenta…";try{const j=await api("register",{name:n,phone:p,password:a});pbAccessToken=j.session.access_token;sessionStorage.setItem("pb_access",pbAccessToken);currentUser=j.user;registerMessage.className="ok";registerMessage.textContent="Cuenta creada correctamente.";loginPhone.value=p;setTimeout(openLogin,600);}catch(e){registerMessage.textContent=e.message;}}
 async function doLogin(){const p=loginPhone.value.trim(),a=loginPassword.value;loginMessage.textContent="Conectando…";try{if(p.toLowerCase()==="admin"){const j=await api("admin_login",{password:a});if(!j.ok)throw new Error("Clave de administrador incorrecta.");pbAdminPassword=a;sessionStorage.setItem("pb_admin",a);currentUser={id:"admin",name:"Administrador Pedreburguer",phone:"admin",role:"admin"};}else{const j=await api("login",{phone:p,password:a});pbAccessToken=j.session.access_token;sessionStorage.setItem("pb_access",pbAccessToken);currentUser=j.user;}loginMessage.textContent="";authView.classList.add("hidden");appView.classList.remove("hidden");helloName.textContent=currentUser.name;if(currentUser.role==="admin"){document.querySelectorAll(".nav-client").forEach(x=>x.classList.add("hidden"));document.querySelectorAll(".nav-admin").forEach(x=>x.classList.remove("hidden"));document.querySelectorAll("main section").forEach(x=>x.classList.add("hidden"));workOrdersView.classList.remove("hidden");document.querySelectorAll("nav button").forEach(x=>x.classList.remove("nav-on"));navWorkOrders.classList.add("nav-on");await renderWorkOrders();renderPayments();renderAdmin();renderManualMenu();renderManualCart();}else{document.querySelectorAll(".nav-admin").forEach(x=>x.classList.add("hidden"));renderMenu();renderCart();await renderMyOrders();}}catch(e){currentUser=null;loginMessage.textContent=e.message;}}
 function logout(){sessionStorage.removeItem("pb_access");sessionStorage.removeItem("pb_admin");location.reload();}
-async function submitOrder(){if(!cartItems.length)return alert("Agrega al menos un producto.");const p=calculateCart(cartItems,orderType.value,paymentMethod.value);const payload={origin:"App cliente",type:orderType.value,address:deliveryAddress.value.trim(),reference:deliveryReference.value.trim(),coords:currentCoords,payment:p.method,items:cartItems,subtotal:p.subtotal,delivery:p.delivery,fee:p.fee,total:p.total,bsRate:configuration.bsRate,usdRate:configuration.usdRate,extraFee:configuration.extra,status:"Pendiente"};try{const j=await api("create_order",{accessToken:pbAccessToken,order:payload});orders.unshift(j.order);alert("Pedido #"+String(j.order.id).padStart(3,"0")+" enviado a Pedreburguer.");cartItems=[];currentCoords=null;deliveryAddress.value="";deliveryReference.value="";gpsMessage.textContent="Puedes enviar tu ubicación para facilitar el delivery.";gpsLink.classList.add("hidden");renderCart();await renderMyOrders();}catch(e){alert(e.message);}}
+async function submitOrder(){
+if(!businessAcceptingOrders())return;if(!cartItems.length)return alert("Agrega al menos un producto.");const p=calculateCart(cartItems,orderType.value,paymentMethod.value);const payload={origin:"App cliente",type:orderType.value,address:deliveryAddress.value.trim(),reference:deliveryReference.value.trim(),coords:currentCoords,payment:p.method,items:cartItems,subtotal:p.subtotal,delivery:p.delivery,fee:p.fee,total:p.total,bsRate:configuration.bsRate,usdRate:configuration.usdRate,extraFee:configuration.extra,status:"Pendiente"};try{const j=await api("create_order",{accessToken:pbAccessToken,order:payload});orders.unshift(j.order);alert("Pedido #"+String(j.order.id).padStart(3,"0")+" enviado a Pedreburguer.");cartItems=[];currentCoords=null;deliveryAddress.value="";deliveryReference.value="";gpsMessage.textContent="Puedes enviar tu ubicación para facilitar el delivery.";gpsLink.classList.add("hidden");renderCart();await renderMyOrders();}catch(e){alert(e.message);}}
 async function renderMyOrders(){if(currentUser?.role!=="customer")return;try{const j=await api("my_orders",{accessToken:pbAccessToken});orders=j.orders;}catch(e){myOrdersList.innerHTML=`<p class="danger">${e.message}</p>`;return;}const mine=orders;myOrdersList.innerHTML=mine.length?mine.map(o=>`<div class="ticket"><div class="ticket-head"><div><div class="ticket-id">#${String(o.id).padStart(3,"0")}</div><div class="muted">${o.date} · ${o.time}</div></div><span class="status ${o.status}">${o.status}</span></div>${productsHtml(o.items)}<div class="payment-data"><b>Pago:</b> ${o.payment}<br><span class="paybadge pay-${o.paymentStatus||"Pendiente"}">${o.paymentStatus||"Pendiente"}</span>${o.paymentReference?`<br>Ref: ${o.paymentReference}`:""}${o.paymentSender?`<br>Envía: ${o.paymentSender}`:""}</div><div class="ticket-total">${money(o.total)}${o.payment==="Pago móvil (Bs)"?`<br><span style="color:#17833b">${bs(o.total/o.bsRate)}</span>`:""}</div>${!["Cancelado","Rechazado"].includes(o.status)&&o.paymentStatus!=="Verificado"?`<button class="secondary full" style="margin-top:9px" onclick="reportPayment(${o.id})">Ya pagué / Reportar pago</button>`:""}${o.status==="Pendiente"?`<button class="dangerbtn full" style="margin-top:8px" onclick="cancelPending(${o.id})">Cancelar pedido</button>`:""}</div>`).join(""):'<p class="muted">Todavía no tienes pedidos.</p>';}
 async function reportPayment(id){const o=orders.find(x=>x.id===id);if(!o)return;let ref=prompt("Referencia o número de operación (si aplica):",o.paymentReference||"");if(ref===null)return;let sender="";if(o.payment.startsWith("Zelle"))sender=prompt("Nombre de quien envió el Zelle:",o.paymentSender||"")||"";else if(o.payment.startsWith("Pago móvil"))sender=prompt("Nombre o teléfono desde donde hicieron el Pago Móvil (opcional):",o.paymentSender||"")||"";else if(o.payment.startsWith("Nequi")||o.payment.startsWith("Bancolombia"))sender=prompt("Nombre de quien hizo la transferencia (opcional):",o.paymentSender||"")||"";try{await api("report_payment",{accessToken:pbAccessToken,id,reference:(ref||"").trim(),sender:sender.trim()});await renderMyOrders();alert("Pago reportado. Pedreburguer lo verificará.");}catch(e){alert(e.message);}}
 async function cancelPending(id){if(!confirm("¿Cancelar este pedido?"))return;try{await api("cancel_order",{accessToken:pbAccessToken,id});await renderMyOrders();}catch(e){alert(e.message);}}
@@ -324,7 +362,120 @@ async function saveProduct(i){const p={...products[i],name:document.getElementBy
 async function toggleProduct(i){const p={...products[i],available:!products[i].available};try{await api("save_product",{adminPassword:pbAdminPassword,product:p});products[i]=p;renderAdmin();renderMenu();renderManualMenu();}catch(e){alert(e.message);}}
 async function addProduct(){const n=newProductName.value.trim(),p=Number(newProductPrice.value);if(!n||!p)return alert("Coloca nombre y precio.");try{const j=await api("add_product",{adminPassword:pbAdminPassword,product:{name:n,price:p}});products.push(j.product);newProductName.value="";newProductPrice.value="";renderAdmin();renderMenu();renderManualMenu();}catch(e){alert(e.message);}}
 async function changeAdminPassword(){adminPassMessage.className="danger";if(adminCurrentPass.value!==pbAdminPassword)return adminPassMessage.textContent="La clave actual no es correcta.";if(adminNewPass.value.length<6)return adminPassMessage.textContent="La nueva clave debe tener mínimo 6 caracteres.";if(adminNewPass.value!==adminNewPass2.value)return adminPassMessage.textContent="Las nuevas claves no coinciden.";try{await api("change_admin_password",{adminPassword:pbAdminPassword,newPassword:adminNewPass.value});pbAdminPassword=adminNewPass.value;sessionStorage.setItem("pb_admin",pbAdminPassword);adminCurrentPass.value=adminNewPass.value=adminNewPass2.value="";adminPassMessage.className="ok";adminPassMessage.textContent="Clave cambiada en el servidor.";}catch(e){adminPassMessage.textContent=e.message;}}
+
+// ===== V6.1: INVITADOS, DIRECCION PERSISTENTE Y AVISOS =====
+let pbGuestToken=localStorage.getItem("pb_guest_token")||"";
+if(!pbGuestToken){pbGuestToken=crypto.randomUUID();localStorage.setItem("pb_guest_token",pbGuestToken);}
+let notificationTimer=null,lastOrderSnapshot=new Map(),notificationsPrimed=false;
+function continueAsGuest(){
+  currentUser={id:null,name:"Invitado",phone:"",role:"guest"};
+  authView.classList.add("hidden");appView.classList.remove("hidden");helloName.textContent="Invitado";
+  document.querySelectorAll(".nav-admin").forEach(x=>x.classList.add("hidden"));
+  guestFields.classList.remove("hidden");
+  guestName.value=localStorage.getItem("pb_guest_name")||"";guestPhone.value=localStorage.getItem("pb_guest_phone")||"";
+  deliveryAddress.value=localStorage.getItem("pb_guest_address")||"";deliveryReference.value=localStorage.getItem("pb_guest_reference")||"";
+  try{const c=JSON.parse(localStorage.getItem("pb_guest_coords")||"null");if(c){currentCoords=c;gpsMessage.textContent=`Ubicación guardada: ${c.lat.toFixed(5)}, ${c.lng.toFixed(5)}`;gpsLink.href=`https://www.google.com/maps?q=${c.lat},${c.lng}`;gpsLink.classList.remove("hidden");}}catch{}
+  renderMenu();renderCart();renderMyOrders();startOrderWatcher();
+}
+async function enableNotifications(){
+  if(!("Notification" in window)){alert("Este navegador no admite notificaciones.");return false;}
+  const permission=Notification.permission==="granted"?"granted":await Notification.requestPermission();
+  if(permission==="granted"){alert("Avisos activados. Mantén Pedreburguer abierta o en segundo plano para recibirlos.");return true;}
+  alert("No se concedió permiso para notificaciones.");return false;
+}
+function notifyPB(title,body){
+  try{if(Notification.permission==="granted")new Notification(title,{body,tag:"pedreburguer-"+Date.now()});}catch{}
+  try{navigator.vibrate?.([250,120,250]);}catch{}
+  try{const A=window.AudioContext||window.webkitAudioContext;if(A){const a=new A(),o=a.createOscillator(),g=a.createGain();o.connect(g);g.connect(a.destination);o.frequency.value=880;g.gain.value=.08;o.start();o.stop(a.currentTime+.22);}}catch{}
+}
+function snapshotAndNotify(list,admin=false){
+  const next=new Map();for(const o of list||[]){next.set(o.id,{status:o.status,paymentStatus:o.paymentStatus});const prev=lastOrderSnapshot.get(o.id);if(notificationsPrimed){if(!prev&&admin)notifyPB("🍔 Nuevo pedido #"+String(o.id).padStart(3,"0"),`${o.customer} · ${money(o.total)}`);else if(prev&&!admin&&prev.status!==o.status)notifyPB("Pedido #"+String(o.id).padStart(3,"0"),`Estado: ${o.status}`);else if(prev&&admin&&prev.paymentStatus!==o.paymentStatus&&o.paymentStatus==="Reportado")notifyPB("💰 Pago reportado #"+String(o.id).padStart(3,"0"),`${o.customer} reportó su pago.`);}}
+  lastOrderSnapshot=next;notificationsPrimed=true;
+}
+async function pollOrders(){
+  if(!currentUser)return;
+  try{
+    if(currentUser.role==="admin"){const j=await api("admin_orders",{adminPassword:pbAdminPassword});snapshotAndNotify(j.orders,true);orders=j.orders;renderWorkOrdersFromCurrent?.();}
+    else if(currentUser.role==="customer"){const j=await api("my_orders",{accessToken:pbAccessToken});snapshotAndNotify(j.orders,false);orders=j.orders;}
+    else if(currentUser.role==="guest"){const j=await api("guest_orders",{guestToken:pbGuestToken});snapshotAndNotify(j.orders,false);orders=j.orders;}
+  }catch(e){console.debug("watcher",e.message)}
+}
+function startOrderWatcher(){clearInterval(notificationTimer);notificationsPrimed=false;lastOrderSnapshot=new Map();pollOrders();notificationTimer=setInterval(pollOrders,8000);}
+const originalDoLoginV61=doLogin;doLogin=async function(){await originalDoLoginV61();if(currentUser){if(currentUser.role==="customer"){guestFields.classList.add("hidden");deliveryAddress.value=currentUser.address||"";deliveryReference.value=currentUser.reference||"";if(currentUser.coords){currentCoords=currentUser.coords;gpsMessage.textContent=`Ubicación guardada: ${currentCoords.lat.toFixed(5)}, ${currentCoords.lng.toFixed(5)}`;gpsLink.href=`https://www.google.com/maps?q=${currentCoords.lat},${currentCoords.lng}`;gpsLink.classList.remove("hidden");}}startOrderWatcher();}}
+const originalCaptureGPSV61=captureGPS;captureGPS=function(){if(!navigator.geolocation){gpsMessage.textContent="Este navegador no permite ubicación.";return;}gpsMessage.textContent="Obteniendo ubicación…";navigator.geolocation.getCurrentPosition(async p=>{currentCoords={lat:p.coords.latitude,lng:p.coords.longitude};gpsMessage.textContent=`Ubicación guardada: ${currentCoords.lat.toFixed(5)}, ${currentCoords.lng.toFixed(5)}`;gpsLink.href=`https://www.google.com/maps?q=${currentCoords.lat},${currentCoords.lng}`;gpsLink.classList.remove("hidden");if(currentUser?.role==="customer"){try{await api("save_customer_location",{accessToken:pbAccessToken,address:deliveryAddress.value,reference:deliveryReference.value,coords:currentCoords});}catch(e){console.error(e)}}else if(currentUser?.role==="guest"){localStorage.setItem("pb_guest_coords",JSON.stringify(currentCoords));}},()=>gpsMessage.textContent="No se pudo obtener la ubicación. Revisa permisos.");}
+submitOrder=async function(){
+ if(!cartItems.length)return alert("Agrega al menos un producto.");
+ const p=calculateCart(cartItems,orderType.value,paymentMethod.value),payload={origin:currentUser?.role==="guest"?"Invitado":"App cliente",type:orderType.value,address:deliveryAddress.value.trim(),reference:deliveryReference.value.trim(),coords:currentCoords,payment:p.method,items:cartItems,subtotal:p.subtotal,delivery:p.delivery,fee:p.fee,total:p.total,bsRate:configuration.bsRate,usdRate:configuration.usdRate,extraFee:configuration.extra,status:"Pendiente"};
+ try{let j;if(currentUser?.role==="guest"){const n=guestName.value.trim(),ph=guestPhone.value.trim();if(!n||ph.replace(/\D/g,"").length<7)return alert("Escribe tu nombre y un teléfono válido.");localStorage.setItem("pb_guest_name",n);localStorage.setItem("pb_guest_phone",ph);localStorage.setItem("pb_guest_address",payload.address);localStorage.setItem("pb_guest_reference",payload.reference);if(currentCoords)localStorage.setItem("pb_guest_coords",JSON.stringify(currentCoords));j=await api("create_guest_order",{guestToken:pbGuestToken,name:n,phone:ph,order:payload});}else{j=await api("create_order",{accessToken:pbAccessToken,order:payload});}
+ orders.unshift(j.order);alert("Pedido #"+String(j.order.id).padStart(3,"0")+" enviado a Pedreburguer.");cartItems=[];renderCart();await renderMyOrders();
+ }catch(e){alert(e.message)}
+}
+renderMyOrders=async function(){
+ if(!currentUser||currentUser.role==="admin")return;try{const j=currentUser.role==="guest"?await api("guest_orders",{guestToken:pbGuestToken}):await api("my_orders",{accessToken:pbAccessToken});orders=j.orders;}catch(e){myOrdersList.innerHTML=`<p class="danger">${e.message}</p>`;return;}
+ const mine=orders;myOrdersList.innerHTML=mine.length?mine.map(o=>`<div class="ticket"><div class="ticket-head"><div><div class="ticket-id">#${String(o.id).padStart(3,"0")}</div><div class="muted">${o.date} · ${o.time}</div></div><span class="status ${o.status}">${o.status}</span></div>${productsHtml(o.items)}<div class="payment-data"><b>Pago:</b> ${o.payment}<br><span class="paybadge pay-${o.paymentStatus||"Pendiente"}">${o.paymentStatus||"Pendiente"}</span></div><div class="ticket-total">${money(o.total)}</div>${!["Cancelado","Rechazado"].includes(o.status)&&o.paymentStatus!=="Verificado"?`<button class="secondary full" style="margin-top:9px" onclick="reportPayment(${o.id})">Ya pagué / Reportar pago</button>`:""}${o.status==="Pendiente"?`<button class="dangerbtn full" style="margin-top:8px" onclick="cancelPending(${o.id})">Cancelar pedido</button>`:""}</div>`).join(""):'<p class="muted">Todavía no tienes pedidos.</p>';
+}
+reportPayment=async function(id){const o=orders.find(x=>x.id===id);if(!o)return;let ref=prompt("Referencia o número de operación (si aplica):",o.paymentReference||"");if(ref===null)return;let sender="";if(o.payment.startsWith("Zelle"))sender=prompt("Nombre de quien envió el Zelle:",o.paymentSender||"")||"";else sender=prompt("Nombre o teléfono de quien hizo el pago (opcional):",o.paymentSender||"")||"";try{if(currentUser?.role==="guest")await api("guest_report_payment",{guestToken:pbGuestToken,id,reference:(ref||"").trim(),sender:sender.trim()});else await api("report_payment",{accessToken:pbAccessToken,id,reference:(ref||"").trim(),sender:sender.trim()});await renderMyOrders();}catch(e){alert(e.message)}}
+cancelPending=async function(id){if(!confirm("¿Cancelar este pedido?"))return;try{if(currentUser?.role==="guest")await api("guest_cancel_order",{guestToken:pbGuestToken,id});else await api("cancel_order",{accessToken:pbAccessToken,id});await renderMyOrders();}catch(e){alert(e.message)}}
+function renderWorkOrdersFromCurrent(){if(currentUser?.role!=="admin")return;pendingCounter.textContent=orders.filter(x=>x.status==="Pendiente").length+" pendientes";}
+deliveryAddress.addEventListener("change",async()=>{if(currentUser?.role==="customer")try{await api("save_customer_location",{accessToken:pbAccessToken,address:deliveryAddress.value,reference:deliveryReference.value,coords:currentCoords})}catch{}else if(currentUser?.role==="guest")localStorage.setItem("pb_guest_address",deliveryAddress.value)});
+deliveryReference.addEventListener("change",async()=>{if(currentUser?.role==="customer")try{await api("save_customer_location",{accessToken:pbAccessToken,address:deliveryAddress.value,reference:deliveryReference.value,coords:currentCoords})}catch{}else if(currentUser?.role==="guest")localStorage.setItem("pb_guest_reference",deliveryReference.value)});
 onlineBootstrap();
+
+
+const STATUS_API='https://ojoirllxbyzhhmcfyxwy.supabase.co/functions/v1/pedreburguer-status';
+let businessState={status:'open',message:'',reopenTime:''};
+
+async function loadBusinessStatus(){
+  try{
+    const r=await fetch(STATUS_API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'get'})});
+    if(!r.ok) return;
+    businessState=await r.json();
+    renderBusinessStatus();
+    const s=document.getElementById('adminBusinessStatus'),m=document.getElementById('adminBusinessMessage'),t=document.getElementById('adminBusinessReopen');
+    if(s)s.value=businessState.status||'open';
+    if(m)m.value=businessState.message||'';
+    if(t)t.value=businessState.reopenTime||'';
+  }catch(e){console.warn('Estado del negocio no disponible',e)}
+}
+function renderBusinessStatus(){
+  const box=document.getElementById('businessStatusBox'),title=document.getElementById('businessStatusTitle'),sub=document.getElementById('businessStatusSub');
+  if(!box||!title||!sub)return;
+  box.className='business-status-box '+businessState.status;
+  if(businessState.status==='open'){
+    title.textContent='🟢 Pedreburguer está abierto';
+    sub.textContent=businessState.message||'Estamos recibiendo pedidos.';
+  }else if(businessState.status==='soon'){
+    title.textContent='🟡 Pedreburguer abre pronto';
+    sub.textContent=[businessState.message,businessState.reopenTime].filter(Boolean).join(' · ')||'Todavía no estamos recibiendo pedidos.';
+  }else{
+    title.textContent='🔴 Pedreburguer está cerrado';
+    sub.textContent=[businessState.message,businessState.reopenTime].filter(Boolean).join(' · ')||'No estamos recibiendo pedidos en este momento.';
+  }
+}
+async function saveBusinessStatus(){
+  const status=document.getElementById('adminBusinessStatus')?.value||'open';
+  const message=document.getElementById('adminBusinessMessage')?.value||'';
+  const reopenTime=document.getElementById('adminBusinessReopen')?.value||'';
+  const adminPassword=(typeof state!=='undefined'&&state.adminPassword)?state.adminPassword:(localStorage.getItem('pb_admin_password')||'');
+  if(!adminPassword){alert('Vuelve a iniciar sesión como administrador para cambiar el estado.');return}
+  try{
+    const r=await fetch(STATUS_API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'set',adminPassword,status,message,reopenTime})});
+    const d=await r.json();
+    if(!r.ok)throw new Error(d.error||'No se pudo guardar');
+    businessState={status:d.status,message:d.message,reopenTime:d.reopenTime};
+    renderBusinessStatus();
+    alert('Estado del negocio actualizado.');
+  }catch(e){alert(e.message||'No se pudo guardar el estado.')}
+}
+function businessAcceptingOrders(){
+  if(businessState.status==='open')return true;
+  const text=businessState.status==='soon'?'Pedreburguer todavía no está recibiendo pedidos.':'Pedreburguer está cerrado en este momento.';
+  alert(text+(businessState.reopenTime?' '+businessState.reopenTime:''));
+  return false;
+}
+loadBusinessStatus();
+setInterval(loadBusinessStatus,60000);
+
 </script>
 </body>
 </html>
