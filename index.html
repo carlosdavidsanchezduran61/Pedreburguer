@@ -117,6 +117,18 @@ hr{border:0;border-top:1px solid var(--line);margin:15px 0}
 }
 </style>
 
+
+<style>
+.danger-btn{
+  border:1px solid #b42318 !important;
+  background:#fff !important;
+  color:#b42318 !important;
+  border-radius:10px !important;
+  padding:9px 12px !important;
+  font-weight:800 !important;
+}
+</style>
+
 </head>
 <body>
 
@@ -424,7 +436,7 @@ Estado del pedido: ${o.status}
 ¡Gracias!
 </pre><script>window.print()<\/script>`);w.document.close();}
 
-function renderAdmin(){if(currentUser?.role!=="admin")return;bsRateInput.value=configuration.bsRate;usdRateInput.value=configuration.usdRate;deliveryFeeInput.value=configuration.delivery;extraFeeInput.value=configuration.extra;zelleFeeInput.value=configuration.fees.Zelle;nequiFeeInput.value=configuration.fees.Nequi;bancoFeeInput.value=configuration.fees.Bancolombia;pmBank.value=paymentAccounts.pmBank;pmPhone.value=paymentAccounts.pmPhone;pmId.value=paymentAccounts.pmId;zelleAccount.value=paymentAccounts.zelle;nequiAccount.value=paymentAccounts.nequi;bancoAccount.value=paymentAccounts.bancolombia;accountHolder.value=paymentAccounts.holder;adminProducts.innerHTML=products.map((p,i)=>`<div class="admin-row"><div class="row"><input id="prodName${i}" value="${p.name}"><input id="prodPrice${i}" type="number" value="${p.price}"></div><div class="admin-actions"><button class="secondary" onclick="saveProduct(${i})">Guardar</button><button class="secondary" onclick="toggleProduct(${i})">${p.available?"Marcar agotado":"Reactivar"}</button></div></div>`).join("");}
+function renderAdmin(){if(currentUser?.role!=="admin")return;bsRateInput.value=configuration.bsRate;usdRateInput.value=configuration.usdRate;deliveryFeeInput.value=configuration.delivery;extraFeeInput.value=configuration.extra;zelleFeeInput.value=configuration.fees.Zelle;nequiFeeInput.value=configuration.fees.Nequi;bancoFeeInput.value=configuration.fees.Bancolombia;pmBank.value=paymentAccounts.pmBank;pmPhone.value=paymentAccounts.pmPhone;pmId.value=paymentAccounts.pmId;zelleAccount.value=paymentAccounts.zelle;nequiAccount.value=paymentAccounts.nequi;bancoAccount.value=paymentAccounts.bancolombia;accountHolder.value=paymentAccounts.holder;adminProducts.innerHTML=products.map((p,i)=>`<div class="admin-row"><div class="row"><input id="prodName${i}" value="${p.name}"><input id="prodPrice${i}" type="number" value="${p.price}"></div><div class="admin-actions"><button class="secondary" onclick="saveProduct(${i})">Guardar</button><button class="secondary" onclick="toggleProduct(${i})">${p.available?"Marcar agotado":"Reactivar"}</button><button class="danger-btn" onclick="deleteProduct(${i})">🗑️ Eliminar</button></div></div>`).join("");}
 function saveConfiguration(){configuration={bsRate:Number(bsRateInput.value)||3.5,usdRate:Number(usdRateInput.value)||1,delivery:Number(deliveryFeeInput.value)||0,extra:Number(extraFeeInput.value)||0,fees:{Zelle:Number(zelleFeeInput.value)||0,Nequi:Number(nequiFeeInput.value)||0,Bancolombia:Number(bancoFeeInput.value)||0}};persist();configMessage.className="ok";configMessage.textContent="Configuración guardada.";}
 function savePaymentAccounts(){paymentAccounts={pmBank:pmBank.value.trim(),pmPhone:pmPhone.value.trim(),pmId:pmId.value.trim(),zelle:zelleAccount.value.trim(),nequi:nequiAccount.value.trim(),bancolombia:bancoAccount.value.trim(),holder:accountHolder.value.trim()};persist();accountsMessage.className="ok";accountsMessage.textContent="Cuentas guardadas.";}
 function changeAdminPassword(){adminPassMessage.className="danger";const admin=users.find(x=>x.role==="admin");if(!admin||admin.password!==adminCurrentPass.value)return adminPassMessage.textContent="La clave actual no es correcta.";if(adminNewPass.value.length<6)return adminPassMessage.textContent="La nueva clave debe tener mínimo 6 caracteres.";if(adminNewPass.value!==adminNewPass2.value)return adminPassMessage.textContent="Las nuevas claves no coinciden.";admin.password=adminNewPass.value;persist();adminCurrentPass.value=adminNewPass.value=adminNewPass2.value="";adminPassMessage.className="ok";adminPassMessage.textContent="Clave de administrador cambiada.";}
@@ -460,6 +472,23 @@ async function savePaymentAccounts(){paymentAccounts={pmBank:pmBank.value.trim()
 async function saveProduct(i){const p={...products[i],name:document.getElementById("prodName"+i).value.trim()||products[i].name,price:Number(document.getElementById("prodPrice"+i).value)||products[i].price};try{await api("save_product",{adminPassword:pbAdminPassword,product:p});products[i]=p;renderAdmin();renderMenu();renderManualMenu();}catch(e){alert(e.message);}}
 async function toggleProduct(i){const p={...products[i],available:!products[i].available};try{await api("save_product",{adminPassword:pbAdminPassword,product:p});products[i]=p;renderAdmin();renderMenu();renderManualMenu();}catch(e){alert(e.message);}}
 async function addProduct(){const n=newProductName.value.trim(),p=Number(newProductPrice.value);if(!n||!p)return alert("Coloca nombre y precio.");try{const j=await api("add_product",{adminPassword:pbAdminPassword,product:{name:n,price:p}});products.push(j.product);newProductName.value="";newProductPrice.value="";renderAdmin();renderMenu();renderManualMenu();}catch(e){alert(e.message);}}
+
+async function deleteProduct(i){
+  const p=products[i];
+  if(!p)return;
+  const ok=confirm(`¿Seguro que deseas eliminar "${p.name}" del menú?\n\nSi tiene pedidos anteriores, se archivará para conservar el historial de ventas.`);
+  if(!ok)return;
+  try{
+    const r=await categoryApi("delete",{adminPassword:pbAdminPassword,productId:p.id});
+    products.splice(i,1);
+    if(activeCategory && !categories().includes(activeCategory)) activeCategory="";
+    renderAdmin();
+    renderMenu();
+    renderManualMenu();
+    alert(r.archived ? "Producto retirado del menú. Sus ventas anteriores se conservaron." : "Producto eliminado.");
+  }catch(e){alert(e.message);}
+}
+
 async function changeAdminPassword(){adminPassMessage.className="danger";if(adminCurrentPass.value!==pbAdminPassword)return adminPassMessage.textContent="La clave actual no es correcta.";if(adminNewPass.value.length<6)return adminPassMessage.textContent="La nueva clave debe tener mínimo 6 caracteres.";if(adminNewPass.value!==adminNewPass2.value)return adminPassMessage.textContent="Las nuevas claves no coinciden.";try{await api("change_admin_password",{adminPassword:pbAdminPassword,newPassword:adminNewPass.value});pbAdminPassword=adminNewPass.value;sessionStorage.setItem("pb_admin",pbAdminPassword);adminCurrentPass.value=adminNewPass.value=adminNewPass2.value="";adminPassMessage.className="ok";adminPassMessage.textContent="Clave cambiada en el servidor.";}catch(e){adminPassMessage.textContent=e.message;}}
 
 // ===== V6.1: INVITADOS, DIRECCION PERSISTENTE Y AVISOS =====
