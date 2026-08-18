@@ -197,7 +197,7 @@ hr{border:0;border-top:1px solid var(--line);margin:15px 0}
 </div>
 </section>
 
-<div class="business-status-admin">
+<div id="adminBusinessStatusPanel" class="business-status-admin hidden">
   <h3>🏪 Estado del negocio</h3>
   <p class="muted">Este estado lo verán todos los clientes.</p>
   <label>Estado</label>
@@ -217,6 +217,29 @@ hr{border:0;border-top:1px solid var(--line);margin:15px 0}
 </div>
 
 <script>
+
+function formatCaracasDate(value){
+  try{
+    const d=value instanceof Date?value:new Date(value);
+    return new Intl.DateTimeFormat("es-VE",{
+      timeZone:"America/Caracas",
+      day:"2-digit",month:"2-digit",year:"numeric"
+    }).format(d);
+  }catch{return ""}
+}
+function formatCaracasTime(value){
+  try{
+    const d=value instanceof Date?value:new Date(value);
+    return new Intl.DateTimeFormat("es-VE",{
+      timeZone:"America/Caracas",
+      hour:"2-digit",minute:"2-digit",
+      hour12:true
+    }).format(d);
+  }catch{return ""}
+}
+function caracasNowISO(){ return new Date().toISOString(); }
+
+
 const INGREDIENTS=["Cebolla","Tomate","Lechuga","Vegetales","Queso","Papitas rápidas","Huevo","Jamón","Mostaza","Salsa de tomate","Mayonesa","Salsas"];
 const DEFAULT_PRODUCTS=[
 {name:"Croqueta",price:18000,available:true},{name:"Milanesa de pollo",price:18000,available:true},{name:"Carne mechada",price:20000,available:true},
@@ -572,12 +595,20 @@ onlineBootstrap();
 const STATUS_API='https://ojoirllxbyzhhmcfyxwy.supabase.co/functions/v1/pedreburguer-status';
 let businessState={status:'open',message:'',reopenTime:''};
 
+
+function refreshAdminOnlyUI(){
+  const isAdmin = currentUser?.role === "admin";
+  const panel = document.getElementById("adminBusinessStatusPanel");
+  if(panel) panel.classList.toggle("hidden", !isAdmin);
+}
+
 async function loadBusinessStatus(){
   try{
     const r=await fetch(STATUS_API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'get'})});
     if(!r.ok) return;
     businessState=await r.json();
     renderBusinessStatus();
+    refreshAdminOnlyUI();
     const s=document.getElementById('adminBusinessStatus'),m=document.getElementById('adminBusinessMessage'),t=document.getElementById('adminBusinessReopen');
     if(s)s.value=businessState.status||'open';
     if(m)m.value=businessState.message||'';
@@ -600,6 +631,11 @@ function renderBusinessStatus(){
   }
 }
 async function saveBusinessStatus(){
+  if(currentUser?.role!=="admin"){
+    alert("Solo el administrador puede cambiar el estado del negocio.");
+    refreshAdminOnlyUI();
+    return;
+  }
   const status=document.getElementById('adminBusinessStatus')?.value||'open';
   const message=document.getElementById('adminBusinessMessage')?.value||'';
   const reopenTime=document.getElementById('adminBusinessReopen')?.value||'';
@@ -623,6 +659,8 @@ function businessAcceptingOrders(){
 loadBusinessStatus();
 setInterval(loadBusinessStatus,60000);
 
+
+setTimeout(refreshAdminOnlyUI,0);
 </script>
 </body>
 </html>
