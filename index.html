@@ -646,8 +646,11 @@ async function saveBusinessStatus(){
   const status=document.getElementById('adminBusinessStatus')?.value||'open';
   const message=document.getElementById('adminBusinessMessage')?.value||'';
   const reopenTime=document.getElementById('adminBusinessReopen')?.value||'';
-  const adminPassword=(typeof state!=='undefined'&&state.adminPassword)?state.adminPassword:(localStorage.getItem('pb_admin_password')||'');
-  if(!adminPassword){alert('Vuelve a iniciar sesión como administrador para cambiar el estado.');return}
+  const adminPassword=pbAdminPassword||sessionStorage.getItem("pb_admin")||"";
+  if(!adminPassword){
+    alert("La sesión de administrador no tiene una clave válida. Cierra sesión e inicia como administrador nuevamente.");
+    return;
+  }
   try{
     const r=await fetch(STATUS_API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'set',adminPassword,status,message,reopenTime})});
     const d=await r.json();
