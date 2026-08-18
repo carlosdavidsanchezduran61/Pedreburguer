@@ -696,6 +696,97 @@ setInterval(loadBusinessStatus,60000);
 setTimeout(refreshAdminOnlyUI,0);
 
 setInterval(refreshAdminOnlyUI,1500);
+
+
+/* ===== Pedreburguer: catálogo por categorías, sin "Todo el menú" ===== */
+let pbSelectedCategory = "";
+
+function pbCategoryEmoji(cat){
+  const c=String(cat||"").toLowerCase();
+  if(c.includes("hamburg")) return "🍔";
+  if(c.includes("refresc")||c.includes("bebida")||c.includes("gaseosa")) return "🥤";
+  if(c.includes("pizza")) return "🍕";
+  if(c.includes("papa")||c.includes("acompañ")) return "🍟";
+  if(c.includes("perro")) return "🌭";
+  if(c.includes("postre")) return "🍰";
+  if(c.includes("combo")) return "🍱";
+  return "🍽️";
+}
+
+function pbGetCategories(){
+  const seen=new Set(), out=[];
+  for(const p of (products||[])){
+    const cat=String(p.category||"Otros").trim()||"Otros";
+    if(!seen.has(cat)){seen.add(cat);out.push(cat);}
+  }
+  return out;
+}
+
+function pbRenderCategoryOnlyMenu(){
+  const productsGrid=document.getElementById("productsGrid");
+  const categoryBar=document.getElementById("categoryBar");
+  if(!productsGrid || !categoryBar) return;
+
+  const cats=pbGetCategories();
+
+  // No default "Todos": customer chooses a category first.
+  if(pbSelectedCategory && !cats.includes(pbSelectedCategory)) pbSelectedCategory="";
+
+  categoryBar.innerHTML=cats.map(cat=>
+    `<button class="chip ${pbSelectedCategory===cat?'active':''}" onclick="pbChooseCategory(${JSON.stringify(cat).replace(/"/g,'&quot;')})">${pbCategoryEmoji(cat)} ${esc(cat)}</button>`
+  ).join("");
+
+  if(!pbSelectedCategory){
+    productsGrid.innerHTML=`
+      <div class="card" style="grid-column:1/-1;text-align:center;padding:28px 18px">
+        <div style="font-size:42px;margin-bottom:8px">🍽️</div>
+        <h3 style="margin:0 0 8px">Elige una categoría</h3>
+        <p class="muted" style="margin:0">Selecciona arriba Hamburguesas, Refrescos, Pizza u otra categoría para ver sus productos.</p>
+      </div>`;
+    return;
+  }
+
+  const list=(products||[]).filter(p=>String(p.category||"Otros").trim()===pbSelectedCategory);
+  productsGrid.innerHTML=list.map(p=>{
+    const disabled=!p.available;
+    return `<div class="product">
+      <div>
+        <b>${esc(p.name)}</b>
+        <div class="price">${money(p.price)}</div>
+        ${disabled?'<div class="muted">Agotado</div>':''}
+      </div>
+      <button class="primary full" ${disabled?'disabled':''} onclick="addToCart('${p.id}')">${disabled?'Agotado':'Agregar'}</button>
+    </div>`;
+  }).join("") || `<div class="card" style="grid-column:1/-1;text-align:center"><p class="muted">No hay productos disponibles en esta categoría.</p></div>`;
+}
+
+function pbChooseCategory(cat){
+  pbSelectedCategory=cat;
+  pbRenderCategoryOnlyMenu();
+  const menu=document.getElementById("productsGrid");
+  if(menu) menu.scrollIntoView({behavior:"smooth",block:"start"});
+}
+
+// Hook into existing menu renderer: after it runs, replace it with category-only layout.
+const pbOriginalRenderProducts = typeof renderProducts==="function" ? renderProducts : null;
+if(pbOriginalRenderProducts){
+  renderProducts = function(){
+    pbOriginalRenderProducts.apply(this,arguments);
+    pbRenderCategoryOnlyMenu();
+  };
+}
+
+// Also refresh after bootstrap/render timing.
+setTimeout(pbRenderCategoryOnlyMenu,300);
+setInterval(()=>{
+  const bar=document.getElementById("categoryBar");
+  const grid=document.getElementById("productsGrid");
+  if(bar&&grid&&!bar.dataset.pbCategoryMode){
+    bar.dataset.pbCategoryMode="1";
+    pbRenderCategoryOnlyMenu();
+  }
+},1200);
+
 </script>
 </body>
 </html>
