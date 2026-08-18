@@ -37,9 +37,12 @@ hr{border:0;border-top:1px solid var(--line);margin:15px 0}
 
 
 .category-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:10px 0 14px}
-.category-card{min-height:68px;border:1px solid #ddd;border-radius:14px;background:#fff;font-weight:800;padding:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;text-align:center}
-.category-card.active{border:2px solid #d71920;background:#fff5f5}.category-emoji{font-size:24px}.category-title{font-size:20px;font-weight:900;margin:14px 0 8px}
-.category-empty{text-align:center;padding:25px 12px;border:1px dashed #ddd;border-radius:14px;background:#fff}.danger{border:1px solid #b42318!important;color:#b42318!important;background:#fff!important}
+.category-card{min-height:70px;border:1px solid #ddd;border-radius:14px;background:#fff;font-weight:800;padding:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;text-align:center}
+.category-card.active{border:2px solid #d71920;background:#fff5f5}
+.category-emoji{font-size:24px;line-height:1}.category-title{font-size:20px;font-weight:900;margin:14px 0 8px}
+.category-empty{text-align:center;padding:24px 12px;border:1px dashed #d6d6d6;border-radius:14px;background:#fff}
+.install-start{margin:0 0 14px;background:#111;color:#fff;border-radius:12px;padding:13px 14px;font-size:15px}
+.install-note{font-size:12px;color:#666;text-align:center;margin-top:-7px;margin-bottom:12px}
 @media(min-width:700px){.category-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
 </style>
 
@@ -81,6 +84,8 @@ hr{border:0;border-top:1px solid var(--line);margin:15px 0}
 
 <div id="authView" class="card auth-card">
   <div class="auth-brand" id="authLogo"></div>
+  <button id="installAppBtnAuth" class="install-start full" type="button" onclick="installPedreburguer()">📲 Instalar Pedreburguer</button>
+  <div id="installAppNote" class="install-note">Instala la app para entrar más rápido la próxima vez.</div>
   <div id="loginPanel">
     <h2>Bienvenido</h2>
     <label>Teléfono<input id="loginPhone" placeholder="0414..."></label>
@@ -198,7 +203,8 @@ hr{border:0;border-top:1px solid var(--line);margin:15px 0}
 
 <div class="card">
 <h2>🍔 Productos</h2><div id="adminProducts"></div><hr><h3>Agregar producto</h3>
-<div class="row"><input id="newProductName" placeholder="Nombre"><input id="newProductPrice" type="number" placeholder="Precio COP"><input id="newProductCategory" placeholder="Categoría (ej. Hamburguesas)"></div>
+<div class="row"><input id="newProductName" placeholder="Nombre"><input id="newProductPrice" type="number" placeholder="Precio COP"></div>
+<label>Categoría<input id="newProductCategory" placeholder="Ej: Hamburguesas, Refrescos, Pizzas, Papas"></label>
 <button class="primary full" style="margin-top:8px" onclick="addProduct()">Agregar producto</button>
 </div>
 </section>
@@ -257,15 +263,61 @@ let paymentAccounts=JSON.parse(localStorage.getItem("pb52_accounts")||"null")||{
 let products=JSON.parse(localStorage.getItem("pb52_products")||"null")||DEFAULT_PRODUCTS;
 let activeCategory="";
 const PB_CAT_API="https://ojoirllxbyzhhmcfyxwy.supabase.co/functions/v1/pedreburguer-categories";
-const catName=p=>String(p?.category||"Otros").trim()||"Otros";
-const catIcon=c=>{c=String(c).toLowerCase();return c.includes("hamb")?"🍔":c.includes("pizza")?"🍕":c.includes("refresc")||c.includes("bebida")?"🥤":c.includes("papa")?"🍟":c.includes("postre")?"🍰":"🍽️"};
-const categories=()=>[...new Set(products.filter(p=>catName(p)!=="__ARCHIVED__").map(catName))];
-async function catApi(action,data={}){const r=await fetch(PB_CAT_API,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action,...data})});let j={};try{j=await r.json()}catch{}if(!r.ok)throw new Error(j.error||"No se pudo procesar el producto.");return j}
-function categoryChooser(mode){return `<div class="category-grid">${categories().map((c,i)=>`<button type="button" class="category-card ${activeCategory===c?"active":""}" onclick="chooseCategory(${i},'${mode}')"><span class="category-emoji">${catIcon(c)}</span><span>${c}</span></button>`).join("")}</div>`}
-function chooseCategory(i,mode){activeCategory=categories()[i]||"";mode==="manual"?renderManualMenu():renderMenu()}
-function visibleProducts(){return activeCategory?products.map((p,i)=>({p,i})).filter(x=>catName(x.p)===activeCategory):[]}
-async function loadCategories(){try{const j=await catApi("list");products.forEach(p=>p.category=j.categories?.[p.id]||p.category||"Otros")}catch(e){console.warn("Categorías",e);products.forEach(p=>p.category=p.category||"Otros")}finally{renderMenu();if(currentUser?.role==="admin"){renderManualMenu();renderAdmin()}}}
 
+function normalizeCategory(value){
+  const raw=String(value||"").trim(),x=raw.toLowerCase();
+  if(!raw)return "Otros";
+  if(x==="hamburguesa"||x==="hamburguesas")return "Hamburguesas";
+  if(x==="refresco"||x==="refrescos"||x==="bebida"||x==="bebidas")return "Refrescos";
+  if(x==="pizza"||x==="pizzas")return "Pizzas";
+  if(["papa","papas","acompañante","acompañantes","papas y acompañantes"].includes(x))return "Papas y acompañantes";
+  return raw;
+}
+function inferCategory(p){
+  if(p?.category)return normalizeCategory(p.category);
+  const n=String(p?.name||"").toLowerCase();
+  if(n.includes("refresco")||n.includes("coca")||n.includes("pepsi")||n.includes("malta")||n.includes("jugo")||n.includes("agua"))return "Refrescos";
+  if(n.includes("pizza"))return "Pizzas";
+  if(n.includes("papa"))return "Papas y acompañantes";
+  if(["croqueta","milanesa de pollo","pollo a la plancha","carne mechada","mixta"].some(k=>n.includes(k)))return "Hamburguesas";
+  return "Otros";
+}
+function productCategory(p){return normalizeCategory(p?.category||inferCategory(p));}
+function categoryIcon(c){
+  const x=String(c).toLowerCase();
+  if(x.includes("hamb"))return "🍔";
+  if(x.includes("refresc")||x.includes("bebid"))return "🥤";
+  if(x.includes("pizza"))return "🍕";
+  if(x.includes("papa")||x.includes("acompañ"))return "🍟";
+  if(x.includes("postre"))return "🍰";
+  return "🍽️";
+}
+function categories(){return [...new Set(products.map(productCategory))];}
+function categoryChooser(mode){
+  return `<div class="category-grid">${categories().map((c,i)=>`<button type="button" class="category-card ${activeCategory===c?"active":""}" onclick="chooseCategory(${i},'${mode}')"><span class="category-emoji">${categoryIcon(c)}</span><span>${c}</span></button>`).join("")}</div>`;
+}
+function chooseCategory(i,mode){activeCategory=categories()[i]||"";mode==="manual"?renderManualMenu():renderMenu();}
+function visibleProducts(){return activeCategory?products.map((p,i)=>({p,i})).filter(({p})=>productCategory(p)===activeCategory):[];}
+function isBurgerProduct(p){return productCategory(p)==="Hamburguesas";}
+async function categoryApi(action,data={}){
+  const r=await fetch(PB_CAT_API,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action,...data})});
+  let j={};try{j=await r.json()}catch{}
+  if(!r.ok)throw new Error(j.error||"No se pudo procesar la categoría.");
+  return j;
+}
+async function loadProductCategories(){
+  try{
+    const j=await categoryApi("list");
+    products.forEach(p=>p.category=normalizeCategory(j.categories?.[p.id]||p.category||inferCategory(p)));
+  }catch(e){
+    console.warn("Categorías:",e);
+    products.forEach(p=>p.category=normalizeCategory(p.category||inferCategory(p)));
+  }finally{
+    if(activeCategory&&!categories().includes(activeCategory))activeCategory="";
+    renderMenu();
+    if(currentUser?.role==="admin"){renderManualMenu();renderAdmin();}
+  }
+}
 let users=JSON.parse(localStorage.getItem("pb52_users")||"[]");
 let orders=JSON.parse(localStorage.getItem("pb52_orders")||"[]");
 let currentUser=null,cartItems=[],manualCartItems=[],currentCoords=null;
@@ -282,11 +334,20 @@ function doLogin(){const p=loginPhone.value.trim(),a=loginPassword.value;current
 function forgotPassword(){alert("La recuperación segura se conectará en la versión online mediante código de verificación.");}function logout(){location.reload();}
 function showView(id,btn){document.querySelectorAll("main section").forEach(x=>x.classList.add("hidden"));document.getElementById(id).classList.remove("hidden");document.querySelectorAll("nav button").forEach(x=>x.classList.remove("nav-on"));btn.classList.add("nav-on");if(id==="myOrdersView")renderMyOrders();if(id==="workOrdersView")renderWorkOrders();if(id==="adminView")renderAdmin();if(id==="manualOrderView"){renderManualMenu();renderManualCart();}if(id==="paymentsView")renderPayments();}
 
-function renderMenu(){const tabs=categoryChooser("client");if(!activeCategory){menuList.innerHTML=tabs+`<div class="category-empty"><b>Elige una categoría</b><div class="muted">Toca una opción para abrir esa carta.</div></div>`;return}menuList.innerHTML=tabs+`<div class="category-title">${catIcon(activeCategory)} ${activeCategory}</div>`+visibleProducts().map(({p,i})=>`<div class="product ${p.available?"":"off"}"><b>${p.name}</b><div class="price">${money(p.price)}</div>${p.available?`<button class="primary full" onclick="addToCart(${i})">Agregar</button>`:`<button class="secondary full" disabled>AGOTADO</button>`}</div>`).join("")}
+function renderMenu(){const chooser=categoryChooser("client");if(!activeCategory){menuList.innerHTML=chooser+`<div class="category-empty"><b>Elige una categoría</b><div class="muted">Toca una opción para abrir esa carta.</div></div>`;return;}menuList.innerHTML=chooser+`<div class="category-title">${categoryIcon(activeCategory)} ${activeCategory}</div>`+visibleProducts().map(({p,i})=>`<div class="product ${p.available?"":"off"}"><b>${p.name}</b><div class="price">${money(p.price)}</div>${p.available?`<button class="primary full" onclick="addToCart(${i})">Agregar</button>`:`<button class="secondary full" disabled>AGOTADO</button>`}</div>`).join("");}
 function addToCart(i){if(!products[i].available)return;cartItems.push({name:products[i].name,price:products[i].price,without:[],extras:[]});renderCart();}
 function toggleItem(arr,i,key,val){const a=arr[i][key],j=a.indexOf(val);if(j>=0)a.splice(j,1);else a.push(val);}
 function renderCart(){if(!cartItems.length){cartList.innerHTML='<p class="muted">Tu carrito está vacío.</p>';cartSummary.innerHTML="";return;}cartList.innerHTML=cartItems.map((x,i)=>itemEditor(x,i,"client")).join("");const p=calculateCart(cartItems,orderType.value,document.getElementById("paymentMethod")?.value||"Pago móvil (Bs)");cartSummary.innerHTML=paymentSummary(p,"client");}
-function itemEditor(x,i,mode){const arr=mode==="client"?"cartItems":"manualCartItems";const rer=mode==="client"?"renderCart()":"renderManualCart()";return `<div class="product"><div class="ticket-head"><b>${x.name}</b><button class="secondary" onclick="${arr}.splice(${i},1);${rer}">Quitar</button></div><label>Sin ingredientes</label><div class="checks">${INGREDIENTS.map(a=>`<label><input type="checkbox" ${x.without.includes(a)?"checked":""} onchange="toggleItem(${arr},${i},'without','${a}');${rer}">${a}</label>`).join("")}</div><label>Extras — ${money(configuration.extra)} c/u</label><div class="checks">${INGREDIENTS.map(a=>`<label><input type="checkbox" ${x.extras.includes(a)?"checked":""} onchange="toggleItem(${arr},${i},'extras','${a}');${rer}">${a}</label>`).join("")}</div></div>`;}
+function itemEditor(x,i,mode){
+  const arr=mode==="client"?"cartItems":"manualCartItems";
+  const rer=mode==="client"?"renderCart()":"renderManualCart()";
+  const canCustomize=isBurgerProduct(x);
+  const options=canCustomize
+    ? `<label>Sin ingredientes</label><div class="checks">${INGREDIENTS.map(a=>`<label><input type="checkbox" ${x.without.includes(a)?"checked":""} onchange="toggleItem(${arr},${i},'without','${a}');${rer}">${a}</label>`).join("")}</div>
+       <label>Extras — ${money(configuration.extra)} c/u</label><div class="checks">${INGREDIENTS.map(a=>`<label><input type="checkbox" ${x.extras.includes(a)?"checked":""} onchange="toggleItem(${arr},${i},'extras','${a}');${rer}">${a}</label>`).join("")}</div>`
+    : "";
+  return `<div class="product"><div class="ticket-head"><b>${x.name}</b><button class="secondary" onclick="${arr}.splice(${i},1);${rer}">Quitar</button></div>${options}</div>`;
+}
 function calculateCart(items,type,method){const subtotal=items.reduce((s,x)=>s+x.price+x.extras.length*configuration.extra,0),delivery=type==="Delivery"?configuration.delivery:0,base=subtotal+delivery;let percent=0;if(method.startsWith("Zelle"))percent=configuration.fees.Zelle;if(method.startsWith("Nequi"))percent=configuration.fees.Nequi;if(method.startsWith("Bancolombia"))percent=configuration.fees.Bancolombia;const fee=base*percent/100,total=base+fee;return{subtotal,delivery,base,method,percent,fee,total};}
 function accountText(method){if(method==="Pago móvil (Bs)")return paymentAccounts.pmBank||paymentAccounts.pmPhone||paymentAccounts.pmId?`Banco: ${paymentAccounts.pmBank||"-"}<br>Teléfono: ${paymentAccounts.pmPhone||"-"}<br>Cédula/RIF: ${paymentAccounts.pmId||"-"}<br>Titular: ${paymentAccounts.holder||"-"}`:"Aún no se han configurado los datos de Pago Móvil.";if(method.startsWith("Zelle"))return paymentAccounts.zelle?`Zelle: ${paymentAccounts.zelle}<br>Titular: ${paymentAccounts.holder||"-"}`:"Zelle aún no configurado.";if(method.startsWith("Nequi"))return paymentAccounts.nequi?`Nequi: ${paymentAccounts.nequi}<br>Titular: ${paymentAccounts.holder||"-"}`:"Nequi aún no configurado.";if(method.startsWith("Bancolombia"))return paymentAccounts.bancolombia?`Bancolombia: ${paymentAccounts.bancolombia}<br>Titular: ${paymentAccounts.holder||"-"}`:"Bancolombia aún no configurado.";return "Pago en efectivo al entregar/retirar.";}
 function paymentSummary(p,mode){let totalText=p.method==="Pago móvil (Bs)"?`${bs(p.total/configuration.bsRate)} <span class="muted">(1 Bs = ${configuration.bsRate.toFixed(2)} COP)</span>`:p.method.includes("USD")?`${usd(p.total/configuration.usdRate)}`:money(p.total);const selId=mode==="client"?"paymentMethod":"manualPaymentMethod",rer=mode==="client"?"renderCart()":"renderManualCart()";return `<div class="total">Subtotal: ${money(p.subtotal)}</div><div>Delivery: ${money(p.delivery)}</div>${p.fee?`<div>Recargo ${p.percent}%: ${money(p.fee)}</div>`:""}<div class="total">Total: ${money(p.total)}</div><label>Método de pago<select id="${selId}" onchange="${rer}"><option ${p.method==="Pago móvil (Bs)"?"selected":""}>Pago móvil (Bs)</option><option ${p.method==="Zelle (USD)"?"selected":""}>Zelle (USD)</option><option ${p.method==="Nequi (COP)"?"selected":""}>Nequi (COP)</option><option ${p.method==="Bancolombia (COP)"?"selected":""}>Bancolombia (COP)</option><option ${p.method==="Efectivo (USD)"?"selected":""}>Efectivo (USD)</option><option ${p.method==="Efectivo (COP)"?"selected":""}>Efectivo (COP)</option></select></label><div class="rate"><b>A pagar:</b> ${totalText}</div><div class="payment-data"><b>Datos para pagar</b><br>${accountText(p.method)}</div>`;}
@@ -344,7 +405,7 @@ function renderPayments(){
 function verifyPayment(id){const o=orders.find(x=>x.id===id);if(o){o.paymentStatus="Verificado";persist();renderPayments();renderWorkOrders();}}
 function markPaymentPending(id){const o=orders.find(x=>x.id===id);if(o){o.paymentStatus="Pendiente";persist();renderPayments();renderWorkOrders();}}
 
-function renderManualMenu(){const tabs=categoryChooser("manual");if(!activeCategory){manualMenu.innerHTML=tabs+`<div class="category-empty"><b>Elige una categoría</b><div class="muted">Selecciona una categoría para ver sus productos.</div></div>`;return}manualMenu.innerHTML=tabs+`<div class="category-title">${catIcon(activeCategory)} ${activeCategory}</div>`+visibleProducts().map(({p,i})=>`<div class="product ${p.available?"":"off"}"><b>${p.name}</b><div class="price">${money(p.price)}</div>${p.available?`<button class="primary full" onclick="addManual(${i})">Agregar</button>`:`<button class="secondary full" disabled>AGOTADO</button>`}</div>`).join("")}
+function renderManualMenu(){const chooser=categoryChooser("manual");if(!activeCategory){manualMenu.innerHTML=chooser+`<div class="category-empty"><b>Elige una categoría</b><div class="muted">Selecciona una categoría para ver sus productos.</div></div>`;return;}manualMenu.innerHTML=chooser+`<div class="category-title">${categoryIcon(activeCategory)} ${activeCategory}</div>`+visibleProducts().map(({p,i})=>`<div class="product ${p.available?"":"off"}"><b>${p.name}</b><div class="price">${money(p.price)}</div>${p.available?`<button class="primary full" onclick="addManual(${i})">Agregar</button>`:`<button class="secondary full" disabled>AGOTADO</button>`}</div>`).join("");}
 function addManual(i){manualCartItems.push({name:products[i].name,price:products[i].price,without:[],extras:[]});renderManualCart();}
 function renderManualCart(){if(!manualCartItems.length){manualCart.innerHTML='<p class="muted">Sin productos.</p>';manualSummary.innerHTML="";return;}manualCart.innerHTML=manualCartItems.map((x,i)=>itemEditor(x,i,"manual")).join("");const p=calculateCart(manualCartItems,manualType.value,document.getElementById("manualPaymentMethod")?.value||"Pago móvil (Bs)");manualSummary.innerHTML=paymentSummary(p,"manual");}
 function submitManualOrder(){if(!manualCartItems.length)return alert("Agrega al menos un producto.");const method=manualPaymentMethod.value,p=calculateCart(manualCartItems,manualType.value,method);let coords=null;if(manualLat.value&&manualLng.value)coords={lat:Number(manualLat.value),lng:Number(manualLng.value)};const o=buildOrder({customer:manualName.value.trim()||"Cliente",phone:manualPhone.value.trim(),origin:manualOrigin.value,type:manualType.value,address:manualAddress.value.trim(),reference:manualReference.value.trim(),coords,payment:p.method,items:manualCartItems,calc:p,status:"Aceptado",acceptedAt:new Date().toISOString()});orders.unshift(o);persist();alert("Ticket #"+String(o.id).padStart(3,"0")+" creado.");manualCartItems=[];manualName.value="";manualPhone.value="";manualAddress.value="";manualReference.value="";manualLat.value="";manualLng.value="";renderManualCart();renderWorkOrders();}
@@ -374,7 +435,7 @@ Estado del pedido: ${o.status}
 ¡Gracias!
 </pre><script>window.print()<\/script>`);w.document.close();}
 
-function renderAdmin(){if(currentUser?.role!=="admin")return;bsRateInput.value=configuration.bsRate;usdRateInput.value=configuration.usdRate;deliveryFeeInput.value=configuration.delivery;extraFeeInput.value=configuration.extra;zelleFeeInput.value=configuration.fees.Zelle;nequiFeeInput.value=configuration.fees.Nequi;bancoFeeInput.value=configuration.fees.Bancolombia;pmBank.value=paymentAccounts.pmBank;pmPhone.value=paymentAccounts.pmPhone;pmId.value=paymentAccounts.pmId;zelleAccount.value=paymentAccounts.zelle;nequiAccount.value=paymentAccounts.nequi;bancoAccount.value=paymentAccounts.bancolombia;accountHolder.value=paymentAccounts.holder;adminProducts.innerHTML=products.filter(p=>catName(p)!=="__ARCHIVED__").map(p=>{const i=products.indexOf(p);return `<div class="admin-row"><div class="row"><input id="prodName${i}" value="${p.name}"><input id="prodPrice${i}" type="number" value="${p.price}"></div><input id="prodCat${i}" value="${catName(p)}" placeholder="Categoría"><div class="admin-actions"><button class="secondary" onclick="saveProduct(${i})">Guardar</button><button class="secondary" onclick="toggleProduct(${i})">${p.available?"Marcar agotado":"Reactivar"}</button><button class="secondary danger" onclick="deleteProduct(${i})">🗑️ Eliminar</button></div></div>`}).join("");}
+function renderAdmin(){if(currentUser?.role!=="admin")return;bsRateInput.value=configuration.bsRate;usdRateInput.value=configuration.usdRate;deliveryFeeInput.value=configuration.delivery;extraFeeInput.value=configuration.extra;zelleFeeInput.value=configuration.fees.Zelle;nequiFeeInput.value=configuration.fees.Nequi;bancoFeeInput.value=configuration.fees.Bancolombia;pmBank.value=paymentAccounts.pmBank;pmPhone.value=paymentAccounts.pmPhone;pmId.value=paymentAccounts.pmId;zelleAccount.value=paymentAccounts.zelle;nequiAccount.value=paymentAccounts.nequi;bancoAccount.value=paymentAccounts.bancolombia;accountHolder.value=paymentAccounts.holder;adminProducts.innerHTML=products.map((p,i)=>`<div class="admin-row"><div class="row"><input id="prodName${i}" value="${p.name}"><input id="prodPrice${i}" type="number" value="${p.price}"></div><label>Categoría<input id="prodCategory${i}" value="${productCategory(p)}" placeholder="Ej: Hamburguesas"></label><div class="admin-actions"><button class="secondary" onclick="saveProduct(${i})">Guardar</button><button class="secondary" onclick="toggleProduct(${i})">${p.available?"Marcar agotado":"Reactivar"}</button></div></div>`).join("");}
 function saveConfiguration(){configuration={bsRate:Number(bsRateInput.value)||3.5,usdRate:Number(usdRateInput.value)||1,delivery:Number(deliveryFeeInput.value)||0,extra:Number(extraFeeInput.value)||0,fees:{Zelle:Number(zelleFeeInput.value)||0,Nequi:Number(nequiFeeInput.value)||0,Bancolombia:Number(bancoFeeInput.value)||0}};persist();configMessage.className="ok";configMessage.textContent="Configuración guardada.";}
 function savePaymentAccounts(){paymentAccounts={pmBank:pmBank.value.trim(),pmPhone:pmPhone.value.trim(),pmId:pmId.value.trim(),zelle:zelleAccount.value.trim(),nequi:nequiAccount.value.trim(),bancolombia:bancoAccount.value.trim(),holder:accountHolder.value.trim()};persist();accountsMessage.className="ok";accountsMessage.textContent="Cuentas guardadas.";}
 function changeAdminPassword(){adminPassMessage.className="danger";const admin=users.find(x=>x.role==="admin");if(!admin||admin.password!==adminCurrentPass.value)return adminPassMessage.textContent="La clave actual no es correcta.";if(adminNewPass.value.length<6)return adminPassMessage.textContent="La nueva clave debe tener mínimo 6 caracteres.";if(adminNewPass.value!==adminNewPass2.value)return adminPassMessage.textContent="Las nuevas claves no coinciden.";admin.password=adminNewPass.value;persist();adminCurrentPass.value=adminNewPass.value=adminNewPass2.value="";adminPassMessage.className="ok";adminPassMessage.textContent="Clave de administrador cambiada.";}
@@ -389,9 +450,9 @@ const PB_KEY="sb_publishable_WgMM-JNcOqsTFHq0nO4Deg_qkYpI62q";
 let pbAccessToken=sessionStorage.getItem("pb_access")||"";
 let pbAdminPassword=sessionStorage.getItem("pb_admin")||"";
 async function api(action,data={}){const r=await fetch(PB_API,{method:"POST",headers:{"Content-Type":"application/json","apikey":PB_KEY},body:JSON.stringify({action,...data})});let j={};try{j=await r.json()}catch{}if(!r.ok)throw new Error(j.error||"No se pudo conectar con Pedreburguer.");return j;}
-async function onlineBootstrap(){try{const j=await api("bootstrap");products=j.products;configuration=j.configuration;paymentAccounts=j.paymentAccounts;renderMenu();renderCart();}catch(e){console.error(e);loginMessage.textContent="Sin conexión con el servidor. Revisa internet e intenta de nuevo.";}}
-function addToCart(i){if(!products[i].available)return;cartItems.push({productId:products[i].id,name:products[i].name,price:products[i].price,without:[],extras:[]});renderCart();}
-function addManual(i){if(!products[i].available)return;manualCartItems.push({productId:products[i].id,name:products[i].name,price:products[i].price,without:[],extras:[]});renderManualCart();}
+async function onlineBootstrap(){try{const j=await api("bootstrap");products=j.products;configuration=j.configuration;paymentAccounts=j.paymentAccounts;await loadProductCategories();renderCart();}catch(e){console.error(e);loginMessage.textContent="Sin conexión con el servidor. Revisa internet e intenta de nuevo.";}}
+function addToCart(i){if(!products[i].available)return;cartItems.push({productId:products[i].id,name:products[i].name,price:products[i].price,category:productCategory(products[i]),without:[],extras:[]});renderCart();}
+function addManual(i){if(!products[i].available)return;manualCartItems.push({productId:products[i].id,name:products[i].name,price:products[i].price,category:productCategory(products[i]),without:[],extras:[]});renderManualCart();}
 async function createAccount(){const n=registerName.value.trim(),p=registerPhone.value.trim(),a=registerPassword.value,b=registerPassword2.value;registerMessage.className="danger";if(!n||!p||!a||!b)return registerMessage.textContent="Completa todos los campos.";if(a.length<6)return registerMessage.textContent="La contraseña debe tener mínimo 6 caracteres.";if(a!==b)return registerMessage.textContent="Las contraseñas no coinciden.";registerMessage.textContent="Creando cuenta…";try{const j=await api("register",{name:n,phone:p,password:a});pbAccessToken=j.session.access_token;sessionStorage.setItem("pb_access",pbAccessToken);currentUser=j.user;registerMessage.className="ok";registerMessage.textContent="Cuenta creada correctamente.";loginPhone.value=p;setTimeout(openLogin,600);}catch(e){registerMessage.textContent=e.message;}}
 async function doLogin(){const p=loginPhone.value.trim(),a=loginPassword.value;loginMessage.textContent="Conectando…";try{if(p.toLowerCase()==="admin"){const j=await api("admin_login",{password:a});if(!j.ok)throw new Error("Clave de administrador incorrecta.");pbAdminPassword=a;sessionStorage.setItem("pb_admin",a);currentUser={id:"admin",name:"Administrador Pedreburguer",phone:"admin",role:"admin"};}else{const j=await api("login",{phone:p,password:a});pbAccessToken=j.session.access_token;sessionStorage.setItem("pb_access",pbAccessToken);currentUser=j.user;}loginMessage.textContent="";authView.classList.add("hidden");appView.classList.remove("hidden");helloName.textContent=currentUser.name;if(currentUser.role==="admin"){document.querySelectorAll(".nav-client").forEach(x=>x.classList.add("hidden"));document.querySelectorAll(".nav-admin").forEach(x=>x.classList.remove("hidden"));document.querySelectorAll("main section").forEach(x=>x.classList.add("hidden"));workOrdersView.classList.remove("hidden");document.querySelectorAll("nav button").forEach(x=>x.classList.remove("nav-on"));navWorkOrders.classList.add("nav-on");await renderWorkOrders();renderPayments();renderAdmin();renderManualMenu();renderManualCart();}else{document.querySelectorAll(".nav-admin").forEach(x=>x.classList.add("hidden"));renderMenu();renderCart();await renderMyOrders();}}catch(e){currentUser=null;loginMessage.textContent=e.message;}}
 function logout(){sessionStorage.removeItem("pb_access");sessionStorage.removeItem("pb_admin");location.reload();}
@@ -407,10 +468,9 @@ function verifyPayment(id){updateOnlineOrder(id,{paymentStatus:"Verificado"});}f
 async function submitManualOrder(){if(!manualCartItems.length)return alert("Agrega al menos un producto.");const p=calculateCart(manualCartItems,manualType.value,manualPaymentMethod.value);let coords=null;if(manualLat.value&&manualLng.value)coords={lat:Number(manualLat.value),lng:Number(manualLng.value)};const payload={customer:manualName.value.trim()||"Cliente",phone:manualPhone.value.trim(),origin:manualOrigin.value,type:manualType.value,address:manualAddress.value.trim(),reference:manualReference.value.trim(),coords,payment:p.method,items:manualCartItems,subtotal:p.subtotal,delivery:p.delivery,fee:p.fee,total:p.total,bsRate:configuration.bsRate,usdRate:configuration.usdRate,extraFee:configuration.extra,status:"Aceptado",acceptedAt:new Date().toISOString()};try{const j=await api("admin_create_order",{adminPassword:pbAdminPassword,order:payload});alert("Ticket #"+String(j.order.id).padStart(3,"0")+" creado.");manualCartItems=[];manualName.value="";manualPhone.value="";manualAddress.value="";manualReference.value="";manualLat.value="";manualLng.value="";renderManualCart();await renderWorkOrders();}catch(e){alert(e.message);}}
 async function saveConfiguration(){configuration={bsRate:Number(bsRateInput.value)||3.5,usdRate:Number(usdRateInput.value)||1,delivery:Number(deliveryFeeInput.value)||0,extra:Number(extraFeeInput.value)||0,fees:{Zelle:Number(zelleFeeInput.value)||0,Nequi:Number(nequiFeeInput.value)||0,Bancolombia:Number(bancoFeeInput.value)||0}};try{await api("save_settings",{adminPassword:pbAdminPassword,configuration,paymentAccounts});configMessage.className="ok";configMessage.textContent="Configuración guardada en internet.";}catch(e){configMessage.className="danger";configMessage.textContent=e.message;}}
 async function savePaymentAccounts(){paymentAccounts={pmBank:pmBank.value.trim(),pmPhone:pmPhone.value.trim(),pmId:pmId.value.trim(),zelle:zelleAccount.value.trim(),nequi:nequiAccount.value.trim(),bancolombia:bancoAccount.value.trim(),holder:accountHolder.value.trim()};try{await api("save_settings",{adminPassword:pbAdminPassword,configuration,paymentAccounts});accountsMessage.className="ok";accountsMessage.textContent="Cuentas guardadas en internet.";}catch(e){accountsMessage.className="danger";accountsMessage.textContent=e.message;}}
-async function saveProduct(i){const p={...products[i],name:document.getElementById("prodName"+i).value.trim()||products[i].name,price:Number(document.getElementById("prodPrice"+i).value)||products[i].price,category:document.getElementById("prodCat"+i).value.trim()||"Otros"};try{await api("save_product",{adminPassword:pbAdminPassword,product:p});const c=await catApi("save",{adminPassword:pbAdminPassword,productId:p.id,category:p.category});p.category=c.category;products[i]=p;renderAdmin();renderMenu();renderManualMenu()}catch(e){alert(e.message)}}
+async function saveProduct(i){const p={...products[i],name:document.getElementById("prodName"+i).value.trim()||products[i].name,price:Number(document.getElementById("prodPrice"+i).value)||products[i].price,category:normalizeCategory(document.getElementById("prodCategory"+i).value||"Otros")};try{await api("save_product",{adminPassword:pbAdminPassword,product:p});await categoryApi("save",{adminPassword:pbAdminPassword,productId:p.id,category:p.category});products[i]=p;if(activeCategory&&!categories().includes(activeCategory))activeCategory="";renderAdmin();renderMenu();renderManualMenu();}catch(e){alert(e.message);}}
 async function toggleProduct(i){const p={...products[i],available:!products[i].available};try{await api("save_product",{adminPassword:pbAdminPassword,product:p});products[i]=p;renderAdmin();renderMenu();renderManualMenu();}catch(e){alert(e.message);}}
-async function addProduct(){const n=newProductName.value.trim(),price=Number(newProductPrice.value),category=(document.getElementById("newProductCategory")?.value||"Otros").trim()||"Otros";if(!n||!price)return alert("Coloca nombre y precio.");try{const j=await api("add_product",{adminPassword:pbAdminPassword,product:{name:n,price}});j.product.category=category;await catApi("save",{adminPassword:pbAdminPassword,productId:j.product.id,category});products.push(j.product);newProductName.value="";newProductPrice.value="";document.getElementById("newProductCategory").value="";renderAdmin();renderMenu();renderManualMenu()}catch(e){alert(e.message)}}
-async function deleteProduct(i){const p=products[i];if(!confirm(`¿Eliminar "${p.name}" del menú?`))return;try{const r=await catApi("delete",{adminPassword:pbAdminPassword,productId:p.id});if(r.archived){p.available=false;p.category="__ARCHIVED__"}else products.splice(i,1);if(activeCategory&&!categories().includes(activeCategory))activeCategory="";renderAdmin();renderMenu();renderManualMenu();alert(r.archived?"Producto retirado. Su historial de ventas se conserva.":"Producto eliminado.")}catch(e){alert(e.message)}}
+async function addProduct(){const n=newProductName.value.trim(),p=Number(newProductPrice.value),c=normalizeCategory(document.getElementById("newProductCategory")?.value||"Otros");if(!n||!p)return alert("Coloca nombre y precio.");try{const j=await api("add_product",{adminPassword:pbAdminPassword,product:{name:n,price:p}});j.product.category=c;await categoryApi("save",{adminPassword:pbAdminPassword,productId:j.product.id,category:c});products.push(j.product);newProductName.value="";newProductPrice.value="";document.getElementById("newProductCategory").value="";renderAdmin();renderMenu();renderManualMenu();}catch(e){alert(e.message);}}
 async function changeAdminPassword(){adminPassMessage.className="danger";if(adminCurrentPass.value!==pbAdminPassword)return adminPassMessage.textContent="La clave actual no es correcta.";if(adminNewPass.value.length<6)return adminPassMessage.textContent="La nueva clave debe tener mínimo 6 caracteres.";if(adminNewPass.value!==adminNewPass2.value)return adminPassMessage.textContent="Las nuevas claves no coinciden.";try{await api("change_admin_password",{adminPassword:pbAdminPassword,newPassword:adminNewPass.value});pbAdminPassword=adminNewPass.value;sessionStorage.setItem("pb_admin",pbAdminPassword);adminCurrentPass.value=adminNewPass.value=adminNewPass2.value="";adminPassMessage.className="ok";adminPassMessage.textContent="Clave cambiada en el servidor.";}catch(e){adminPassMessage.textContent=e.message;}}
 
 // ===== V6.1: INVITADOS, DIRECCION PERSISTENTE Y AVISOS =====
@@ -444,14 +504,20 @@ async function registerPBServiceWorker(){
 }
 window.addEventListener("beforeinstallprompt",e=>{
   e.preventDefault();pbInstallPrompt=e;
-  document.getElementById("installAppBtn")?.classList.remove("hidden");
+  document.getElementById("installAppBtn")?.classList.remove("hidden");document.getElementById("installAppBtnAuth")?.classList.remove("hidden");
 });
 window.addEventListener("appinstalled",()=>{
-  pbInstallPrompt=null;document.getElementById("installAppBtn")?.classList.add("hidden");
+  pbInstallPrompt=null;document.getElementById("installAppBtn")?.classList.add("hidden");document.getElementById("installAppBtnAuth")?.classList.add("hidden");document.getElementById("installAppNote")?.classList.add("hidden");
 });
 async function installPedreburguer(){
-  if(pbInstallPrompt){pbInstallPrompt.prompt();await pbInstallPrompt.userChoice;return;}
-  alert("Si no aparece el instalador, abre el menú de Chrome y toca “Instalar aplicación” o “Agregar a pantalla principal”.");
+  if(window.matchMedia("(display-mode: standalone)").matches||window.navigator.standalone===true){alert("Pedreburguer ya está instalada en este teléfono.");return;}
+  if(pbInstallPrompt){
+    pbInstallPrompt.prompt();
+    const choice=await pbInstallPrompt.userChoice;
+    if(choice?.outcome==="accepted"){document.getElementById("installAppBtnAuth")?.classList.add("hidden");document.getElementById("installAppBtn")?.classList.add("hidden");}
+    return;
+  }
+  alert("En Chrome toca el menú ⋮ y selecciona “Instalar aplicación” o “Agregar a pantalla principal”.");
 }
 async function enableNotifications(){
   if(!("Notification" in window)||!("serviceWorker" in navigator)||!("PushManager" in window)){
@@ -657,7 +723,7 @@ async function saveBusinessStatus(){
   const status=document.getElementById('adminBusinessStatus')?.value||'open';
   const message=document.getElementById('adminBusinessMessage')?.value||'';
   const reopenTime=document.getElementById('adminBusinessReopen')?.value||'';
-  const adminPassword=(typeof state!=='undefined'&&state.adminPassword)?state.adminPassword:(localStorage.getItem('pb_admin_password')||'');
+  const adminPassword=pbAdminPassword||sessionStorage.getItem('pb_admin')||'';
   if(!adminPassword){alert('Vuelve a iniciar sesión como administrador para cambiar el estado.');return}
   try{
     const r=await fetch(STATUS_API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'set',adminPassword,status,message,reopenTime})});
@@ -680,7 +746,12 @@ setInterval(loadBusinessStatus,60000);
 
 setTimeout(refreshAdminOnlyUI,0);
 
-setTimeout(()=>loadCategories(),350);
+window.addEventListener("DOMContentLoaded",()=>{
+  if(window.matchMedia("(display-mode: standalone)").matches||window.navigator.standalone===true){
+    document.getElementById("installAppBtnAuth")?.classList.add("hidden");
+    document.getElementById("installAppNote")?.classList.add("hidden");
+  }
+});
 </script>
 </body>
 </html>
